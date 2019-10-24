@@ -1,5 +1,7 @@
 from numpy import log10
 
+#VERIFIED
+
 def ColebrookEquation(Dh, Ep, Re):
     Fd = 1e-3
     aa = 1
