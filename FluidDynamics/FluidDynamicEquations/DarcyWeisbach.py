@@ -1,15 +1,20 @@
+import sys
+sys.path.append('../../REFPROP')
+from refprop import RefPropInterface
 from ColebrookEquation import *
 from BlasiusCorrelation import *
 
-#VERIFIED 
+#VERIFIED
 
 def DarcyWeisbach(Fluid, P, H, MFLX, Dh, A, Ep):
     '''Darcy Weissbach formula for single phase pressure drop
     Inputs: Fluid, P (bar), H (kJ/kg), MFLX (kg/m2), Dh (m)
     Output: dP (bar)'''
     #Uncomment these when refprop is fixed
-    #RHO=refpropm('D','P',P*1e2,'H',H,Fluid) #kg/m^3
-    #DV=refpropm('V','P',P*1e2,'H',H,Fluid) #dynamic viscosity
+    RPI = RefPropInterface()
+    refpropm = RPI.refpropm
+    RHO=refpropm('D','P',P*1e2,'H',H,Fluid) #kg/m^3
+    DV=refpropm('V','P',P*1e2,'H',H,Fluid) #dynamic viscosity
     RHO = 5
     DV = 0.2
 

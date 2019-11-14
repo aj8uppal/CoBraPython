@@ -1,9 +1,14 @@
 #VERIFIED
+import sys
+sys.path.append('../../REFPROP')
+from refprop import RefPropInterface
 
 def MolarMass(fluid):
     #Commented until refprop is fixed, arbitrary value for now
-    # Dco2=refpropm('D','T',293.15,'P',1e2,'CO2');
-    # D=refpropm('D','T',293.15,'P',1e2,fluid);
+    RPI = RefPropInterface()
+    refpropm = RPI.refpropm
+    Dco2=refpropm('D','T',293.15,'P',1e2,'CO2');
+    D=refpropm('D','T',293.15,'P',1e2,fluid);
     Dco2 = 1.98
     D = 0.807
 

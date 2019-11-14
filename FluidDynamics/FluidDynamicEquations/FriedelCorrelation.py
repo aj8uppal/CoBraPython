@@ -1,17 +1,22 @@
 from Correlations import F_Void_8
+import sys
+sys.path.append('../../REFPROP')
+from refprop import RefPropInterface
 
 #VERIFIED
 
 def FriedelCorrelation(Fluid, P, VQ, MFLX, Dh, A):
+    RPI = RefPropInterface()
+    refpropm = RPI.refpropm
     #Fluid properties: (arbitrary values until refprop is fixed)
-    # Dliq=refpropm('D','P',P*1e2,'Q',0,Fluid);       #kg/m3
-    # Dvap=refpropm('D','P',P*1e2,'Q',1,Fluid);      #kg/m3
-    # Dtp=refpropm('D','P',P*1e2,'Q',VQ,Fluid);       #kg/m3
-    # Vliq=refpropm('V','P',P*1e2,'Q',0,Fluid);    #Pa*s
-    # Vvap=refpropm('V','P',P*1e2,'Q',1,Fluid);     #Pa.s
-    # Isft=refpropm('I','P',P*1e2,'Q',0,Fluid);    #N/m
+    Dliq=refpropm('D','P',P*1e2,'Q',0,Fluid);       #kg/m3
+    Dvap=refpropm('D','P',P*1e2,'Q',1,Fluid);      #kg/m3
+    Dtp=refpropm('D','P',P*1e2,'Q',VQ,Fluid);       #kg/m3
+    Vliq=refpropm('V','P',P*1e2,'Q',0,Fluid);    #Pa*s
+    Vvap=refpropm('V','P',P*1e2,'Q',1,Fluid);     #Pa.s
+    Isft=refpropm('I','P',P*1e2,'Q',0,Fluid);    #N/m
 
-    Dliq = Dvap = Dtp = Vliq = Vvap = Isft = 2
+    # Dliq = Dvap = Dtp = Vliq = Vvap = Isft = 2
 
     #Dimensionless numbers
     REliq=MFLX*(1-VQ)*Dh/Vliq    #Reynolds number of the liquid phase

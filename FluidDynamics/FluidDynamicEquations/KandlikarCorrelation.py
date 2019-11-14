@@ -1,20 +1,25 @@
 #VERIFIED
+import sys
+sys.path.append('../../REFPROP')
+from refprop import RefPropInterface
 
 def KandlikarCorrelation(Fluid, P, VQ, MFLX, HFLX, Dh):
     #Commented until refprop is fixed, arbitrary value for now
     #Fluid properties
-    # Dliq=refpropm('D','P',P*1e2,'Q',0,Fluid)       #kg/m3
-    # Dvap=refpropm('D','P',P*1e2,'Q',1,Fluid)      #kg/m3
-    # Dtp=refpropm('D','P',P*1e2,'Q',VQ,Fluid)       #kg/m3
-    # Vliq=refpropm('V','P',P*1e2,'Q',0,Fluid)    #Pa*s
-    # Vvap=refpropm('V','P',P*1e2,'Q',1,Fluid)     #Pa.s
-    # Isft=refpropm('I','P',P*1e2,'Q',0,Fluid)    #N/m
-    #
-    #
-    # Hliq=refpropm('H','P',P*1e2,'Q',0,Fluid)       #J/kg
-    # Hvap=refpropm('H','P',P*1e2,'Q',1,Fluid)       #J/kg
-    # LAMliq=refpropm('L','P',P*1e2,'Q',0,Fluid)      # W/mK
-    # CPliq=refpropm('C','P',P*1e2,'Q',0,Fluid)        #Specific heat
+    RPI = RefPropInterface()
+    refpropm = RPI.refpropm
+    Dliq=refpropm('D','P',P*1e2,'Q',0,Fluid)       #kg/m3
+    Dvap=refpropm('D','P',P*1e2,'Q',1,Fluid)      #kg/m3
+    Dtp=refpropm('D','P',P*1e2,'Q',VQ,Fluid)       #kg/m3
+    Vliq=refpropm('V','P',P*1e2,'Q',0,Fluid)    #Pa*s
+    Vvap=refpropm('V','P',P*1e2,'Q',1,Fluid)     #Pa.s
+    Isft=refpropm('I','P',P*1e2,'Q',0,Fluid)    #N/m
+
+
+    Hliq=refpropm('H','P',P*1e2,'Q',0,Fluid)       #J/kg
+    Hvap=refpropm('H','P',P*1e2,'Q',1,Fluid)       #J/kg
+    LAMliq=refpropm('L','P',P*1e2,'Q',0,Fluid)      # W/mK
+    CPliq=refpropm('C','P',P*1e2,'Q',0,Fluid)        #Specific heat
     Dliq = Dtp = Vliq  = Isft = Hliq = LAMliq = CPliq = 2
     Dvap = Vvap = Hvap = 3
     PRliq=Vliq*CPliq/LAMliq #Prandl

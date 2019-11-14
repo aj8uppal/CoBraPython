@@ -1,4 +1,4 @@
-from numpy import log10
+from cmath import log10
 
 #VERIFIED
 
