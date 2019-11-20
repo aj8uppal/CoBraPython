@@ -1,13 +1,13 @@
 from Correlations import F_Void_8
 import sys
-sys.path.append('../../REFPROP')
-from refprop import RefPropInterface
+# sys.path.append('../../REFPROP')
+# from refprop import RefPropInterface
 
 #VERIFIED
 
-def FriedelCorrelation(Fluid, P, VQ, MFLX, Dh, A):
-    RPI = RefPropInterface()
-    refpropm = RPI.refpropm
+def FriedelCorrelation(Fluid, P, VQ, MFLX, Dh, A, refpropm):
+    # RPI = RefPropInterface()
+    # refpropm = RPI.refpropm
     #Fluid properties: (arbitrary values until refprop is fixed)
     Dliq=refpropm('D','P',P*1e2,'Q',0,Fluid);       #kg/m3
     Dvap=refpropm('D','P',P*1e2,'Q',1,Fluid);      #kg/m3

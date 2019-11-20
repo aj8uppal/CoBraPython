@@ -1,13 +1,13 @@
 #VERIFIED
-import sys
-sys.path.append('../../REFPROP')
-from refprop import RefPropInterface
+# import sys
+# sys.path.append('../../REFPROP')
+# from refprop import RefPropInterface
 
-def KandlikarCorrelation(Fluid, P, VQ, MFLX, HFLX, Dh):
+def KandlikarCorrelation(Fluid, P, VQ, MFLX, HFLX, Dh, refpropm):
     #Commented until refprop is fixed, arbitrary value for now
     #Fluid properties
-    RPI = RefPropInterface()
-    refpropm = RPI.refpropm
+    # RPI = RefPropInterface()
+    # refpropm = RPI.refpropm
     Dliq=refpropm('D','P',P*1e2,'Q',0,Fluid)       #kg/m3
     Dvap=refpropm('D','P',P*1e2,'Q',1,Fluid)      #kg/m3
     Dtp=refpropm('D','P',P*1e2,'Q',VQ,Fluid)       #kg/m3

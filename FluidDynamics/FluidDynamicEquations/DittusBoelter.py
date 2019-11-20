@@ -1,14 +1,14 @@
 #VERIFIED
-import sys
-sys.path.append('../../REFPROP')
-from refprop import RefPropInterface
+# import sys
+# sys.path.append('../../REFPROP')
+# from refprop import RefPropInterface
 
-def DittusBoelter(Fluid, P, H, MFLX, HFLX, Dh):
+def DittusBoelter(Fluid, P, H, MFLX, HFLX, Dh, refpropm):
     '''Input of HFLX is for determining cooling or heating. Ui HFLX is unknown
         then put a -1 for cooling and a +1 for heating.'''
     #Uncomment once refprop is fixed
-    RPI = RefPropInterface()
-    refpropm = RPI.refpropm
+    # RPI = RefPropInterface()
+    # refpropm = RPI.refpropm
     DV=refpropm('V','P',P*1e2,'H',H,Fluid);    # Dynamic Viscosity (Pa*s)
     LAMBDA=refpropm('L','P',P*1e2,'H',H,Fluid)    # W/mK
     CP=refpropm('C','P',P*1e2,'H',H,Fluid) #Specific heat J/kg/K

@@ -1,11 +1,11 @@
 from Correlations import *
-import sys
-sys.path.append('../../REFPROP')
-from refprop import RefPropInterface
+# import sys
+# sys.path.append('../../REFPROP')
+# from refprop import RefPropInterface
 
-def ThomeCorrelation_Con(Fluid, P, H, MFLX, HFLX, Dh, A, Ph):
-    RPI = RefPropInterface()
-    refpropm = RPI.refpropm
+def ThomeCorrelation_Con(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
+    # RPI = RefPropInterface()
+    # refpropm = RPI.refpropm
     fluid = Fluid
     G=MFLX #kg/m2s
     d=Dh #Equivalent diameter.

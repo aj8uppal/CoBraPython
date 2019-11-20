@@ -1,8 +1,8 @@
-import sys
-sys.path.append('../../REFPROP')
-from refprop import RefPropInterface
+# import sys
+# sys.path.append('../../REFPROP')
+# from refprop import RefPropInterface
 
-def SteinerTaborek(fluid,P,H,MFLX,HFLX,Dh,A,Ph,g):
+def SteinerTaborek(fluid,P,H,MFLX,HFLX,Dh,A,Ph,g, refpropm):
     '''Data book
     Chapter10 boilinig heat transfer inside plain tubes 10.3.4 steiner-taborek
     asymptotic model
@@ -60,21 +60,21 @@ def SteinerTaborek(fluid,P,H,MFLX,HFLX,Dh,A,Ph,g):
     Fnb=[F_Fnbver(Pr,Dh,q,qo,M)]
 
      # x=refpropm('Q','P',P,'H',H,fluid);
-     x=2
+    x=2
     #  e=F_voidver(x,Dv,g,Dh,Dl,G,ST);           %  Data book Chapter 17 Page17-18 Rouhani-Axelsson Correlation
 
-    if x==0 && q<q_ONB:
+    if x==0 and q<q_ONB:
         HTC_xt=[F_HTC_xtver(G,Dh,Vl,CPl,Kl)]
         HTC_tp=HTC_xt;
-    elif x==0 && q>q_ONB:
+    elif x==0 and q>q_ONB:
         Ftp=((1-x)**1.5+1.9*x**0.6*(Dl/Dv)**0.35)**1.1;
         [HTC_xt]=F_HTC_xtver(G,Dh,Vl,CPl,Kl);
         HTC_tp=((HTC_nbo*Fnb)**3+(HTC_xt*Ftp)**3)**(1/3);
-    elif x<xcrit && q>q_ONB:
+    elif x<xcrit and q>q_ONB:
         Ftp=((1-x)**1.5+1.9*x**0.6*(Dl/Dv)**0.35)**1.1;
         [HTC_xt]=F_HTC_xtver(G,Dh,Vl,CPl,Kl);
         HTC_tp=((HTC_nbo*Fnb)**3+(HTC_xt*Ftp)**3)**(1/3);
-    elif x>=xcrit && x<1:   # mist flow
+    elif x>=xcrit and x<1:   # mist flow
         HTC_mist,x=F_mistver(fluid,P,x,G,Dh) #mist flow HTC by 18.5.2 Groeneveld Method Page18-9
         HTC_tp= HTC_mist;
     else:

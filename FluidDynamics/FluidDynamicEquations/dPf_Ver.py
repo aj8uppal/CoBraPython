@@ -1,12 +1,12 @@
 from Correlations import F_Void_8
 from DarcyWeisbach import *
-import sys
-sys.path.append('../../REFPROP')
-from refprop import RefPropInterface
+# import sys
+# sys.path.append('../../REFPROP')
+# from refprop import RefPropInterface
 
-def dPf_Ver(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, Angle, g):
-    RPI = RefPropInterface()
-    refpropm = RPI.refpropm
+def dPf_Ver(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, Angle, g, refpropm):
+    # RPI = RefPropInterface()
+    # refpropm = RPI.refpropm
     dP = -1
     rm = -1
     fluid = Fluid
@@ -15,19 +15,19 @@ def dPf_Ver(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, Angle, g):
     #refpropm section ADD LATER
     Hl=refpropm('H','P',P,'Q',0,fluid);
     Hv=refpropm('H','P',P,'Q',1,fluid);
-    Density [kg/m3]
+    # Density [kg/m3]
     Dl=refpropm('D','P',P,'Q',0,fluid);
     Dv=refpropm('D','P',P,'Q',1,fluid);
-    Viscosity [Pa.s]
+    # Viscosity [Pa.s]
     Vl=refpropm('V','P',P,'Q',0,fluid);
     Vv=refpropm('V','P',P,'Q',1,fluid);
-    Thermal Conductivity [W/m.K]
+    # Thermal Conductivity [W/m.K]
     Kl=refpropm('L','P',P,'Q',0,fluid);
     Kv=refpropm('L','P',P,'Q',1,fluid);
-    Specific Heat [J/kg.K]
+    # Specific Heat [J/kg.K]
     CPl=refpropm('C','P',P,'Q',0,fluid);
     CPv=refpropm('C','P',P,'Q',1,fluid);
-    Surface Tension [N/m]
+    # Surface Tension [N/m]
     ST=refpropm('I','P',P,'Q',0,fluid);
 
     # Hl = Hv = Dl = Dv = Vl = Vv = Kl = Kv = CPl = CPv = ST = 2 #arbitrary value

@@ -595,7 +595,7 @@ def F_hnb_8( p,q):
 
 def F_delta_11(d,A,e,DryAngle):
     delta=(d/2)-((d/2)^2-((2*A*(1-e))/(2*pi-DryAngle)))**0.5;
-    if delta>d/2;
+    if delta>d/2:
         delta=d/2;
     return delta
 

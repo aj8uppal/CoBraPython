@@ -40,7 +40,7 @@ class RefPropInterface:
     def __init__(self):
         RP = REFPROPFunctionLibrary(os.environ['RPPREFIX'])
         RP.SETPATHdll(os.environ['RPPREFIX'])
-        self.UNIT = RP.GETENUMdll(0,"MKS").iEnum
+        self.UNIT = 0#RP.GETENUMdll(0,"MKS").iEnum
         self.RP = RP
     def refpropm(self, output, iName1, iValue1, iName2, iValue2, fluid, unit=None):
         return self.RP.REFPROPdll(fluid, iName1+iName2, output, unit or self.UNIT, 0, 0, iValue1, iValue2, [1.0]).Output[0]

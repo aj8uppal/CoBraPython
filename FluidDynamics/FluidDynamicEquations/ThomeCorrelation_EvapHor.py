@@ -1,14 +1,14 @@
 from Correlations import *
-import sys
-sys.path.append('../../REFPROP')
-from refprop import RefPropInterface
+# import sys
+# sys.path.append('../../REFPROP')
+# from refprop import RefPropInterface
 
-def ThomeCorrelation_EvapHor(Fluid, P, H, MFLX, HFLX, Dh, A, Ph):
+def ThomeCorrelation_EvapHor(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     # Wojtan-Ursenbacher-Thome model_updated based on model of
     # Kattan-Thome-Favrat Map_Databook  Chapter 12 flow pattern map in
     # horizontal plain tube
-    RPI = RefPropInterface()
-    refpropm = RPI.refpropm
+    # RPI = RefPropInterface()
+    # refpropm = RPI.refpropm
     fluid=Fluid;
     G=MFLX; #kg/m2s
     # d=(4*A/pi)^0.5; # Equivalent diameter.
@@ -134,7 +134,7 @@ def ThomeCorrelation_EvapHor(Fluid, P, H, MFLX, HFLX, Dh, A, Ph):
     elif flowpattern == 'Mist':
         #DPf=F_DPmist_evap(G,d,x,Dl,Dv,Vl,Vv);#done
         htp=F_HTCmist_18710evap( G,d,x,CPv,Dl,Dv,Kv,Vv ); #done
-    elif flowpattern == NotIdentified':
+    elif flowpattern == 'NotIdentified':
         DPf=0;
         htp=0;
 
