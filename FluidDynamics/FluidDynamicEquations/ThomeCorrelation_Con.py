@@ -13,7 +13,7 @@ def ThomeCorrelation_Con(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     q=abs(HFLX) #w/m2K
     #Commented until refprop is fixed, arbitrary value for now
     # Inlet Vapor Quality
-    x=refpropm('Q','P',p,'H',H,fluid);
+    x=refpropm('Q','P',round(p),'H',round(H),fluid);
 
     #Enthalpy [J/kg]
 
@@ -53,6 +53,7 @@ def ThomeCorrelation_Con(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
 
 
     #Get Transition Boundary - Stratified-Wavy to Intermittent and Annular (SW-I/A)
+    # print(x, Dl, Dv)
     Gwavy=F_Gwavy_16con(G,d,A,x,e,Dl,Dv,ST);
 
     #Transition Boundary - Intermittent to Bubbly Flow (I-B)

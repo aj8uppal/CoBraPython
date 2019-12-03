@@ -5,11 +5,18 @@ sys.path.append('..')
 from BlasiusCorrelation import *
 
 def F_Void_8(G, x, Dl, Dv, ST):
+    # print(x)
     g = 9.81
     # Void Fraction (Rouhani-Axelsson drift flux model)
     #e=(x/Dv)*((1+0.12*(1-x))*((x/Dv)+((1-x)/Dl))+((1.18*(1-x)*(g*ST*(Dl-Dv))**(1/4))/(G*Dl**(1/2))))**(-1)
 
     # Homogeneous Void Fraction
+    # print(x, Dv, Dl)
+    if x <= 0:
+        return 0
+    elif x >= 1:
+        return 1
+
     eH=1/(1+((1-x)/x)*(Dv/Dl));
 
     #Rouhani Void Fraction
@@ -94,8 +101,10 @@ def F_Gwavy_16con(G, d, A, x, e, Dl, Dv, ST):
         en=F_Void_8(G,xn,Dl,Dv,ST);
         hldn=F_hld_11( en );
         Avdn=F_Avd_10( d,A,en );
-
-        Gwavy2=(((16*Avdn**3*g*d*Dl*Dv)/(xn**2*pi**2*(1-(2*hldn-1)**2)**(1/2)))*((pi**2/(25*hldn**2))*(Wel_Frl)**(-1.023)+1))**(1/2)+50-75*exp(-(xn**2-0.97)**2/xn/(1-xn));
+        if xn != 0:
+            Gwavy2=(((16*Avdn**3*g*d*Dl*Dv)/(xn**2*pi**2*(1-(2*hldn-1)**2)**(1/2)))*((pi**2/(25*hldn**2))*(Wel_Frl)**(-1.023)+1))**(1/2)+50-75*exp(-(xn**2-0.97)**2/xn/(1-xn));
+        else:
+            Gwavy2 = float("inf")
         dG=Gwavy2-Gwavy
         if Gwavy2<Gwavy and x>0.3:
             Gwavy=Gwavy2
@@ -443,6 +452,8 @@ def F_Gmist_24(q,d,x,Dl,Dv,Hl,Hv,ST):
     qcrit=F_CHF_23(Dl,Dv,Hl,Hv,ST);
     Gdry=F_Gdry_19(q,d,x,Dl,Dv,Hl,Hv,ST);
     #Transition Boundary - Dryout to Mist Flow (D-M) (Thome et al.)
+    if q == 0:
+        return float('inf')
     Gmist=((1/0.502)*(log(0.61/x)+0.57)*(d/(Dv*ST))**(-0.16)*(1/(g*d*Dv*(Dl-Dv)))**(-0.15)*(Dv/Dl)**(0.09)*(q/qcrit)**(-0.72))**(1.613);
     if Gmist<=Gdry:
         Gmist=Gdry
@@ -468,6 +479,8 @@ def F_CHF_23(Dl, Dv, Hl, Hv, ST):
 def F_Gdry_19(q, d, x, Dl, Dv, Hl, Hv, ST):
     g=9.81;
     qcrit=F_CHF_23(Dl,Dv,Hl,Hv,ST)
+    if q == 0:
+        return float('inf')
     Gdry=((1/0.236)*(log(0.58/x)+0.52)*(d/(Dv*ST))**(-0.17)*(1/(g*d*Dv*(Dl-Dv)))**(-0.17)*(Dv/Dl)**(-0.25)*(q/qcrit)**(-0.27))**(1.471);
     return Gdry
 
@@ -594,8 +607,8 @@ def F_hnb_8( p,q):
     return hnb
 
 def F_delta_11(d,A,e,DryAngle):
-    delta=(d/2)-((d/2)^2-((2*A*(1-e))/(2*pi-DryAngle)))**0.5;
-    if delta>d/2:
+    delta=(d/2)-((d/2)**2-((2*A*(1-e))/(2*pi-DryAngle)))**0.5;
+    if delta.real>d/2:
         delta=d/2;
     return delta
 

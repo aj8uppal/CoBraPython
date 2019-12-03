@@ -33,14 +33,52 @@ Z   Compressibility factor
 @   dH/dT (constant rho) [J/(kg K)]
 #   dP/dT (constant rho) [kPa/K]
 $   Kinematic viscosity [cm^2/s]
-  Thermal diffusivity [cm^2/s]
+%   Thermal diffusivity [cm^2/s]
 ^   Prandtl number [-]'''
 
 class RefPropInterface:
     def __init__(self):
         RP = REFPROPFunctionLibrary(os.environ['RPPREFIX'])
         RP.SETPATHdll(os.environ['RPPREFIX'])
-        self.UNIT = 0#RP.GETENUMdll(0,"MKS").iEnum
+        self.UNIT = 7 #RP.GETENUMdll(0,"MKS").iEnum
         self.RP = RP
+    def changeUnits(self, inputUnit, factor=False):
+        outputUnit = inputUnit
+        if inputUnit == 'V':
+            outputUnit = 'VIS'
+            factor = factor if not factor else 1e-6
+        elif inputUnit == 'C':
+            outputUnit = 'CP'
+            factor = factor if not factor else 1e3
+        elif inputUnit == 'I':
+            outputUnit = 'STN'
+            factor = factor if not factor else 1e-3
+        elif inputUnit == 'L':
+            outputUnit = 'TCX'
+        elif inputUnit == 'H':
+            factor = factor if not factor else 1e3
+        return outputUnit, 1 if not factor else factor
     def refpropm(self, output, iName1, iValue1, iName2, iValue2, fluid, unit=None):
-        return self.RP.REFPROPdll(fluid, iName1+iName2, output, unit or self.UNIT, 0, 0, iValue1, iValue2, [1.0]).Output[0]
+        factor = 1
+        output, factor = self.changeUnits(output,factor=True)
+        iName1, _ = self.changeUnits(iName1)
+        iName2, _ = self.changeUnits(iName2)
+        iValue1 = iValue1*1e-3 if iName1 == 'H' else iValue1
+        iValue2 = iValue2*1e-3 if iName2 == 'H' else iValue2
+        if output == 'Q':
+            return self.RP.REFPROPdll(fluid, iName1+iName2, 'QMASS', 7, 0, 0, iValue1, iValue2, [1.0]).q
+        return factor*self.RP.REFPROPdll(fluid, iName1+iName2, output, unit or self.UNIT, 0, 0, iValue1, iValue2, [1.0]).Output[0]
+    def closeTo(self, a1, a2, epsilon=0.01):
+        return (abs(a1-a2) < abs((a1+a2)/2)*epsilon)
+    def test(self):
+        #complete: I, C, L, V, D, H, P, Q
+        assert(self.closeTo(self.refpropm('I','P',1000,'Q',0,'CO2'), 0.0127))
+        assert(self.closeTo(self.refpropm('C','P',1000,'Q',0,'CO2'), 2.0111e+03))
+        assert(self.closeTo(self.refpropm('L','P',1000,'Q',0,'CO2'), 0.1595, epsilon=0.02))
+        assert(self.closeTo(self.refpropm('V','P',1000,'Q',0,'CO2'), 1.9415e-04))
+        assert(self.closeTo(self.refpropm('D','P',1000,'Q',0,'CO2'), 1.1169e+03))
+        assert(self.closeTo(self.refpropm('H','P',1000,'Q',0,'CO2'), 1.1266e+05))
+        assert(self.closeTo(self.refpropm('Q','P',1000,'H',2e5,'CO2'), 0.2707))
+        assert(self.closeTo(self.refpropm('D','P',1000,'H',2e5,'CO2'), 90.3934))
+        assert(self.closeTo(self.refpropm('V','P',1000,'H',2e6,'CO2'), 5.5715e-05))
+        assert(self.closeTo(self.refpropm('L','P',1000,'H',2e6,'CO2'), 0.1040, epsilon=0.025))

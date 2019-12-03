@@ -70,7 +70,7 @@ class CoolingBranch_v1a:
             if self.Q[x] == 0:
                 self.HFLX[x] = 0
             elif all([np.isnan(i) for i in self.HF]):
-                self.HFLX[x]=self.HFinp[x]/(self.L[x]*np.pi*self.D[x])
+                self.HFLX[x]=self.HFinp[x]/(self.L[x]*np.pi*self.D[x]) #r_tube
             elif self.Q[x] == -1:
                 self.HFLX[x]=self.QPower[x]/(self.L[x]*np.pi*self.D[x]) #Heatflux array
             else:
@@ -163,6 +163,7 @@ class CoolingBranch_v1a:
         self.HTCconv = []
         ittstop = 400
         while (abs(converge)>convlimit or conv_repeat<conv_repeat_limit+1) and itt<ittstop:
+            foo = True
             itt+=1
             print("Iteration Round: {}".format(itt))
             print("Iteration offset: {} (Stops at {})".format(converge, convlimit))
@@ -221,7 +222,7 @@ class CoolingBranch_v1a:
                     self.HFLXf[x] = self.HFf[x]/self.Af_per[x]+self.HFLXf_hx[x]
                 else:
                     self.HFLXf[x]=self.HFLXf_env[x]+self.HFLXf_hx[x]+self.HFLXf_app[x]
-                    if np.isnan(self.HF):
+                    if all(np.isnan(self.HF)):
                         self.HFf = [sum(self.HFinp)]
                     else:
                         self.HFf = [sum(self.HF)]
@@ -232,6 +233,7 @@ class CoolingBranch_v1a:
                     self.H[x] = 9e4
                 # print("Entering dPandHTC...")
                 newDP, newHTC, newVQ, newRM, newState, newT = dPandHTC(self.Fluid, self.P[x], self.H[x], self.MFLXf[x], self.HFLXf[x], self.Df[x], 0.25*pi*self.Df[x]**2, pi*self.Df[x], self.Epf[x], self.Anf[x], self.Tsh, self.refpropm);
+                # print("{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(self.Fluid, self.P[x], self.H[x], self.MFLXf[x], self.HFLXf[x], self.Df[x], 0.25*pi*self.Df[x]**2, pi*self.Df[x], self.Epf[x], self.Anf[x], self.Tsh))
                 # times[4]+=(time()-start)
                 # print("Exiting dPandHTC...")
                 self.dP[x] = newDP
@@ -240,12 +242,22 @@ class CoolingBranch_v1a:
                 self.rm[x] = newRM
                 self.State[x] = newState
                 self.T[x] = newT
-                self.dH[x] = (self.HFLXf[x]*pi*self.Df[x]*(self.Lf[x]-self.Lf[x-1]))/self.MF #calculate enthalpy difference
+                self.dH[x] = (self.HFLXf[x]*pi*self.Df[x]*(self.Lf[x]-self.Lf[x-1]))/self.MF #calculate enthalpy difference, mass not mol
+                # print(self.dH[x
+                if(abs(self.dH[x]) > 1e6):
+                    foo = False
+                    break
                 self.Tw[x] = self.T[x]+(self.HFLXf[x]/self.HTC[x]) #wall temperature
                 self.H[x] = self.H[x-1]+self.dH[x] #calculate new enthalpy
+                # print(self.dH[x])
 
             # print(times)
                 #end for loop
+            # foo = max([i for i in self.dH if not np.isnan(i)])
+            # if foo > 1e6:
+            #     break
+            if not foo:
+                break
             self.P[-1] = self.refpropm('P','T',self.Tsp+273.15,'Q',1,self.Fluid)*1e-2;
             for x in range(len(self.Lf)-2, -1, -1):
                 self.P[x] = self.P[x+1]+self.dP[x+1]*(self.Lf[x+1]-self.Lf[x]) #calculate new pressure
@@ -264,6 +276,7 @@ class CoolingBranch_v1a:
                 self.T[0] = float('nan')
             else:
                 self.H[0] = self.refpropm('H','T',self.T[0]+273.15,'P',self.P[0]*1e2,self.Fluid) #calculate inlet enthalpy based on given inlet temperature
+
             self.Tw[0] = float('nan')
             # Pconv=P-Pprev;
             # Tconv=T-Tprev;
@@ -279,7 +292,7 @@ class CoolingBranch_v1a:
     def plot(self):
         pass
 
-x = CoolingBranch_v1a('CO2', -25, 0, 25, 1, [3600], {'filename': '../CoBraV1a_example.xlsx', 'sheetname': 'Example'}, 0.01, "Plot", 0, [3600])
+x = CoolingBranch_v1a('CO2', -25, 0, 0, 5*1.516e-3, [134.4,100], {'filename': '../CoBraV1a_example.xlsx', 'sheetname': 'Example'}, 10e-3, "Plot", 0, [3600])
 x.start()
 x.run()
 print("Completed.")

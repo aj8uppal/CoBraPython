@@ -11,12 +11,12 @@ def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     d=(4*A/pi)**0.5; # Equivalent diameter.
     p=P;  #bar
     q=HFLX; #w/m2K
-    # 
+    #
     # RPI = RefPropInterface()
     # refpropm = RPI.refpropm
     #Inlet Vapor Quality
     x=refpropm('Q','P',p*1e2,'H',H,fluid);
-
+    # print("p, H, x: {}, {}, {}".format(p, H, x))
     #Enthalpy [J/kg]
 
     Hl=refpropm('H','P',p*100,'Q',0,fluid);
@@ -49,6 +49,7 @@ def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
 
     #Intermittent to Annular Flow Transition Boundary
     xia=F_xia_18(Dl,Dv,Vl,Vv);
+    # print(xia, Dv, Dl)
     eia=F_Void_8(G,xia,Dl,Dv,ST);
 
     #Void fraction
@@ -142,7 +143,7 @@ def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     elif flowpattern == 'NotIdentified':
         DPf=0;
         htp=0;
-    end
+
     DPmom=F_DPmomentum_28(G,q,A,Ph,x,e,Dl,Dv,Hl,Hv,ST);
     #DPmom=0;
     #DPf=0;
@@ -154,4 +155,4 @@ def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
 
     HTC=htp;
     rm=(Dv*e+Dl*(1-e))*A; #Relative mass kg/m
-    return dP, HTC, x, rm, flowpattern
+    return dP, HTC.real, x, rm, flowpattern

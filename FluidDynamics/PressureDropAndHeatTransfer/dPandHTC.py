@@ -31,12 +31,14 @@ def dPandHTC(Fluid,P,H,MFLX,HFLX,Dh,A,Ph,Ep,Angle,SH, refpropm):
     # ver=str2num(ver(end-5:end-2));
     # if ver>2011;
     times = {1: 0, 2: 0}
-    CritP=refpropm('P','C',0,' ',0,Fluid)*1e-2;
-
-    if Fluid[-3:].lower() == 'mix':
-        TripP = 0
-    else:
-        TripP=refpropm('P','R',0,' ',0,Fluid)*1e-2;
+    # CritP=refpropm('P','C',0,' ',0,Fluid)*1e-2;
+    #
+    # if Fluid[-3:].lower() == 'mix':
+    #     TripP = 0
+    # else:
+    #     TripP=refpropm('P','R',0,' ',0,Fluid)*1e-2;
+    TripP = 5.1796
+    CritP = 73.7730
 
 
     #if fluid is co2 CritP=73.7; TripP=5.2;
@@ -71,7 +73,7 @@ def dPandHTC(Fluid,P,H,MFLX,HFLX,Dh,A,Ph,Ep,Angle,SH, refpropm):
     # times[1]+=time()-start
     # start = time()
     if State == 'supercritical':
-        
+
         dP, rm, none = DarcyWeisbach(Fluid,P,H,MFLX,Dh,A,Ep, refpropm)
 
         HTC = DittusBoelter( Fluid,P,H,MFLX,HFLX,Dh, refpropm)
@@ -98,6 +100,7 @@ def dPandHTC(Fluid,P,H,MFLX,HFLX,Dh,A,Ph,Ep,Angle,SH, refpropm):
         if HFLX>=0:
             if Angle==0:
                 if Fluid == 'CO2':
+                    # print("{}, {}, {}, {}, {}, {}, {}, {}".format(Fluid,P,H,MFLX,HFLX,Dh,A,Ph))
                     dP,HTC,VQ,rm,State=ThomeCorrelation_EvapHor_CO2(Fluid,P,H,MFLX,HFLX,Dh,A,Ph, refpropm);
                 else:
                      #HTC=KandlikarCorrelation(Fluid,P,VQ,MFLX,HFLX,Dh);
