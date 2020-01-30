@@ -44,6 +44,7 @@ class RefPropInterface:
         self.RP = RP
     def changeUnits(self, inputUnit, factor=False):
         outputUnit = inputUnit
+        #CritP --> 
         if inputUnit == 'V':
             outputUnit = 'VIS'
             factor = factor if not factor else 1e-6

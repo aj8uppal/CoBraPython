@@ -199,7 +199,8 @@ def F_FilmAngle_8130con(G, d, A, x, e, Dl, Dv, Vl, ST):
     Gstrat=F_Gstrat_17con(d,A,x,e,Dl,Dv,Vl)
     Gwavy=F_Gwavy_16con(G,d,A,x,e,Dl,Dv,ST)
     AngleStrat=F_StratAngle_13(e)
-    FilmAngle=AngleStrat*((Gwavy-G)/(Gwavy-Gstrat))**0.5
+
+    FilmAngle=sqrt(AngleStrat*((Gwavy-G)/(Gwavy-Gstrat))).real;
     return FilmAngle
 
 def F_RElo_38(G, d, Vl):
@@ -234,6 +235,9 @@ def F_DPannu_29(G, d, x, e, Dl, Dv, Vv, ST):
     return DPa
 
 def F_uv_31(G, x, e, Dv):
+    # print(G, x, e, Dv)
+    if e == 0:
+        return 1e6
     uv=G*x/(Dv*e)
     return uv
 
@@ -363,10 +367,13 @@ def F_htcAxial_8132con(G, d, A, x, e, Dl, Dv, CPl, Kl, Vl, ST):
     n=0.74
     m=0.5
     dfilm=F_dfilm_8135con(G,d,A,x,e,Dl,Dv,Vl,ST);
+    # print(G, d, A, x, e, Dl, Dv, Vl, ST);
+
     Rel=F_ReL_8133con(G,x,e,Vl,dfilm);
     Pr=F_Prandtx( CPl,Kl,Vl) ;
     Gstrat=F_Gstrat_17con(d,A,x,e,Dl,Dv,Vl);
     fi=F_fi_8140con(G,d,A,x,e,Dl,Dv,Vl,ST);
+    # print(dfilm, Rel, Pr, Gstrat, fi)
     if G<Gstrat:
         fi=fi*G/Gstrat
     htc=c*Rel**n*Pr**m*Kl/dfilm*fi;
@@ -384,6 +391,7 @@ def F_dfilm_8135con(G, d, A, x, e, Dl, Dv, Vl, ST):
     Al=A*(1-e)
     FilmAngle=F_FilmAngle_8130con(G,d,A,x,e,Dl,Dv,Vl,ST);
     dfilm=(d-(d**2-Al*8/(2*pi-FilmAngle))**0.5)/2;
+    # print(FilmAngle, dfilm);
     # dAl=1;
     # dfilm=0;
     # while dAl>1e-20;
@@ -392,9 +400,9 @@ def F_dfilm_8135con(G, d, A, x, e, Dl, Dv, Vl, ST):
     # dfilm=dfilm+1e-8;
 
     dfilm=(d/2)-sqrt((d/2)**2-(2*Al)/(2*pi-FilmAngle));
-    if dfilm>d/2:
+    if dfilm.real>d/2:
         dfilm=d/2
-    return dfilm
+    return dfilm.real
 
 def F_ReL_8133con(G, x, e, Vl, df):
     Rel=4*G*(1-x)*df/(1-e)/Vl
@@ -452,12 +460,12 @@ def F_Gmist_24(q,d,x,Dl,Dv,Hl,Hv,ST):
     qcrit=F_CHF_23(Dl,Dv,Hl,Hv,ST);
     Gdry=F_Gdry_19(q,d,x,Dl,Dv,Hl,Hv,ST);
     #Transition Boundary - Dryout to Mist Flow (D-M) (Thome et al.)
-    if q == 0:
+    if q == 0 or x == 0:
         return float('inf')
     Gmist=((1/0.502)*(log(0.61/x)+0.57)*(d/(Dv*ST))**(-0.16)*(1/(g*d*Dv*(Dl-Dv)))**(-0.15)*(Dv/Dl)**(0.09)*(q/qcrit)**(-0.72))**(1.613);
-    if Gmist<=Gdry:
+    if Gmist.real<=Gdry.real:
         Gmist=Gdry
-    return Gmist
+    return Gmist.real
 
 def F_FroudeVapor_22( G,d,Dl,Dv ):
     # Froude vapor by Mori et al.
@@ -479,7 +487,8 @@ def F_CHF_23(Dl, Dv, Hl, Hv, ST):
 def F_Gdry_19(q, d, x, Dl, Dv, Hl, Hv, ST):
     g=9.81;
     qcrit=F_CHF_23(Dl,Dv,Hl,Hv,ST)
-    if q == 0:
+    # print(q, d, x, Dl, Dv, Hl, Hv, ST)
+    if q == 0 or x == 0:
         return float('inf')
     Gdry=((1/0.236)*(log(0.58/x)+0.52)*(d/(Dv*ST))**(-0.17)*(1/(g*d*Dv*(Dl-Dv)))**(-0.17)*(Dv/Dl)**(-0.25)*(q/qcrit)**(-0.27))**(1.471);
     return Gdry

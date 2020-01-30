@@ -15,8 +15,8 @@ def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     # RPI = RefPropInterface()
     # refpropm = RPI.refpropm
     #Inlet Vapor Quality
-    x=refpropm('Q','P',p*1e2,'H',H,fluid);
-    # print("p, H, x: {}, {}, {}".format(p, H, x))
+    x=abs(refpropm('Q','P',round(p*1e2, 2),'H',round(H, 2),fluid));
+    # print("p, H, x: {}, {}, {}".format(round(p*1e2, 3), round(H, 3), x))
     #Enthalpy [J/kg]
 
     Hl=refpropm('H','P',p*100,'Q',0,fluid);
@@ -54,6 +54,7 @@ def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
 
     #Void fraction
     e=F_Void_8(G,x,Dl,Dv,ST);
+    # print(G, x, Dl, Dv, ST, e);
 
     #Get Transition Boundary - Stratified-Wavy to Intermittent and Annular (SW-I/A)
     Gwavy=F_Gwavy_14(G,d,A,x,e,Dl,Dv,ST);
@@ -67,6 +68,7 @@ def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     Gbub=F_Gbub_26(d,A,x,e,Dl,Dv,Vl);
 
     #Transition Boundary - Dryout to Mist Flow (D-M)
+    # print(q, d, x, Dl, Dv, Hl, Hv, ST)
     Gmist=F_Gmist_24(q,d,x,Dl,Dv,Hl,Hv,ST);
 
     #Transition Boundary - Annular to Dryout (A-D)
@@ -113,6 +115,7 @@ def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     else:
         flowpattern='NotIdentified'
     ##
+    # print(flowpattern)
     if flowpattern == 'Strat':
         DPf=F_DPstrat_52(G,d,x,e,Dl,Dv,Vl,Vv,ST );
         htp=F_HTCstrat( p,G,q,d,A,x,e,CPl,CPv,Dl,Dv,Kl,Kv,Vl,Vv,ST);
@@ -129,8 +132,14 @@ def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
         DPf=F_DPslug_int_35(G,d,x,e,Dl,Dv,Vl,Vv,ST);
         htp=F_HTCannu_int_bub_slug( p,G,q,d,A,x,e,CPl,CPv,Dl,Dv,Kl,Kv,Vl,Vv,ST);
     elif flowpattern == 'Bub':
+        # print(G,d,x,e,Dl,Dv,Vl,Vv,ST);
         DPf=F_DPbub_56(G,d,x,e,Dl,Dv,Vl,Vv,ST );
+        # print("FOO");
+        # print(DPf);
+        # print("GAH")
+        # print(p, G, q, d, A, x, e, CPl, CPv, Dl, Dv, Kl, Kv, Vl, Vv, ST)
         htp=F_HTCannu_int_bub_slug( p,G,q,d,A,x,e,CPl,CPv,Dl,Dv,Kl,Kv,Vl,Vv,ST);
+        # print(htp, "HTP");
     elif flowpattern == 'Annu':
         DPf=F_DPannu_29(G,d,x,e,Dl,Dv,Vv,ST);
         htp=F_HTCannu_int_bub_slug( p,G,q,d,A,x,e,CPl,CPv,Dl,Dv,Kl,Kv,Vl,Vv,ST);
@@ -145,6 +154,7 @@ def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
         htp=0;
 
     DPmom=F_DPmomentum_28(G,q,A,Ph,x,e,Dl,Dv,Hl,Hv,ST);
+    # print(flowpattern, DPmom, DPf)
     #DPmom=0;
     #DPf=0;
     dP=DPf+DPmom;
@@ -155,4 +165,5 @@ def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
 
     HTC=htp;
     rm=(Dv*e+Dl*(1-e))*A; #Relative mass kg/m
-    return dP, HTC.real, x, rm, flowpattern
+    # print(HTC.real)
+    return dP, HTC.real, x, rm, flowpattern, xia, Gwavy, Gwavy_xia, Gstrat, Gbub, Gmist, Gdry

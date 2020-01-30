@@ -13,7 +13,7 @@ def ThomeCorrelation_Con(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     q=abs(HFLX) #w/m2K
     #Commented until refprop is fixed, arbitrary value for now
     # Inlet Vapor Quality
-    x=refpropm('Q','P',round(p),'H',round(H),fluid);
+    x=abs(refpropm('Q','P',round(p, 2),'H',round(H, 2),fluid));
 
     #Enthalpy [J/kg]
 
@@ -61,7 +61,7 @@ def ThomeCorrelation_Con(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
 
     #Transition Boundary - Annular and intermittent flow to Mist Flow (AI-M)
     Gmist=F_Gmist_19con(G,d,A,x,e,Dl,Dv,ST);
-
+    # print(Gmist, x, xia, G, Gbub)
     #flow definition
 
 
@@ -72,7 +72,7 @@ def ThomeCorrelation_Con(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     elif G >= Gstrat and G <= Gwavy:
         flowpattern = 'SW'
         FilmAngle = F_FilmAngle_8130con(G, d, A, x, e, Dl, Dv, Vl, ST)
-    elif G >= Gwavy and G <= Gmist and x <= xia and G <= Gbub:
+    elif G >= Gwavy and G <= Gmist.real and x <= xia and G <= Gbub.real:
         flowpattern='Int';
         FilmAngle = 0
     elif G <= Gmist and x <= xia and G > Gbub:
@@ -96,6 +96,7 @@ def ThomeCorrelation_Con(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     elif flowpattern == 'Int':
         DPf=F_DPslug_int_35(G,d,x,e,Dl,Dv,Vl,Vv,ST);
         htp=F_HTC_8123con( G,q,d,A,x,e,FilmAngle,Dl,Dv,CPl,Kl,Hl,Hv,Vl,ST);
+        # print(G, q, d, A, x, e, FilmAngle, Dl, Dv, CPl, Kl, Hl, Hv, Vl, ST, p, H);
     elif flowpattern == 'Annu':
         DPf=F_DPannu_29(G,d,x,e,Dl,Dv,Vv,ST);
         htp=F_HTC_8123con( G,q,d,A,x,e,FilmAngle,Dl,Dv,CPl,Kl,Hl,Hv,Vl,ST);
@@ -116,4 +117,4 @@ def ThomeCorrelation_Con(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     HTC=htp.real;
 
     rm=(Dv*e+Dl*(1-e))*A #Relative mass kg/m
-    return dP, HTC, x, rm, flowpattern
+    return dP, HTC, x, rm, flowpattern, xia, Gwavy, None, Gstrat, Gbub, Gmist, None

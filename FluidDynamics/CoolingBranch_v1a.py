@@ -1,15 +1,16 @@
+import sys, os
+sys.path.append('PressureDropAndHeatTransfer')
+sys.path.append('../REFPROP')
 import pandas as pd
 import numpy as np
-from helper import roundup
+import matplotlib.pyplot as pl
 from math import pi
 from inspect import signature
-import sys
-sys.path.append('../REFPROP')
 from refprop import RefPropInterface
-sys.path.append('PressureDropAndHeatTransfer')
 from time import time
 from dPandHTC import *
-import os
+from xml.dom import minidom
+from FluidDynamicEquations import *
 
 #use np arrays
 
@@ -18,136 +19,216 @@ warnings.filterwarnings('ignore')
 
 class CoolingBranch_v1a:
     refpropm = RefPropInterface().refpropm
-    def __init__(self, Fluid, Tsp, Tsc, Tsh, MF, HF, config, dL, name, plt, HFf):
+    p=False
+    def __init__(self, Fluid, Tsp, Tsc, Tsh, MF, config, name, plt):
         #config = {filename: , sheetname: }
         self.Fluid = Fluid
-        self.Tsp = Tsp
-        self.Tsc = Tsc
-        self.Tsh = Tsh
-        self.MF = MF
-        self.HF = HF
-        self.dL = dL
+        self.setPointTemp = Tsp #C
+        self.subCoolingTemp = Tsc #C
+        self.allowedSuperHeatTemp = Tsh #C
+        self.massFlow = MF #kg/s
+#        self.heatFlow = HF #watts
         self.name = name
         self.plt = plt
-        self.HFf = HFf
+#        self.HFf = HFf #?
         self.nargin = len(signature(CoolingBranch_v1a).parameters)
-        df = pd.read_excel(config['filename'], sheet_name=config['sheetname'])
-        getCol = lambda N: df[df.columns[N if N < len(df.columns) else 0]]
-        N_D=2;
-        N_A=3;
-        N_L=4;
-        N_An=5;
-        N_Ep=6;
-        N_Q=7;
-        N_HXnode=8;
-        N_HXflowdir=9;
-        N_HXcond=10  ;
-        N_ISOcond=11;
-        N_Tenv=12;
-        N_HF=13;
-        N_QPower=18;
-        self.D=getCol(N_D)/1e3 #extract diameters
-        self.A=getCol(N_A)/1e6 #extract flow crossectional areas
-        self.L=getCol(N_L) #extract lengths
-        self.An=getCol(N_An) #extract inclinations
-        self.Ep=getCol(N_Ep)/1e6 #extract  roughnesses
-        self.Q=getCol(N_Q) #extract heater labels
-        self.HXnode=getCol(N_HXnode) #extract heat exchange nodes
-        self.HXflowdir=getCol(N_HXflowdir) #extract heat exchanger flow direction
-        self.HXcond=getCol(N_HXcond) #extract heat exchanger conductance
-        self.ISOcond=getCol(N_ISOcond) #extract insulation conductance
-        print(self.ISOcond)
-        self.Tenv=getCol(N_Tenv) #extract Tenv
-        self.HFinp=getCol(N_HF)
-        self.QPower=getCol(N_QPower)
+        columns = {
+            "section": 0,
+            "hydraulicDiameter": 1, # in mm
+            "tubeSectionLength": 2, # in m
+            "tubeOrientationAngle": 3, # in degree
+            "tubeRoughness": 4, # in um
+            "HXNode": 5,
+            "HXFlowDir": 6,
+            "HXConductance": 7,
+            "HXThickness": 8,
+            "insulationConductance": 9,
+            "envTemperature": 10,
+            "tubeWallThickness": 11,
+            "insulationThickness": 12,
+            "tubeThermalConductance": 13,
+            "insulationThermalConductance": 14,
+            "HTCAir": 15,
+            "heatFlow": 16,
+            "dL": 17
+        }
+        data = minidom.parse("../CoBraV1a_example.xml")
+        params = data.getElementsByTagName("parameter")
+        # df = pd.read_excel(config['filename'], sheet_name=config['sheetname'])
+        getCol = lambda N: np.array(list(map(float, ["nan" if len(i.toxml()) == 8 else i.firstChild.data for i in params[N].getElementsByTagName("value")])))
+        self.diameters=getCol(columns["hydraulicDiameter"])/1e3 # extract hydraulic diameter
+        self.crossSectionArea=np.pi*self.diameters*self.diameters/4.
+        self.tubeSectionLength=getCol(columns["tubeSectionLength"]) #extract lengths
+        self.tubeOrientationAngle=getCol(columns["tubeOrientationAngle"]) #extract inclinations
+        self.tubeRoughness=getCol(columns["tubeRoughness"])/1e6 #extract  roughnesses
+        self.HXNode=np.array(list(map(int, getCol(columns["HXNode"])))) #extract heat exchange nodes
+        self.HXFlowDir=getCol(columns["HXFlowDir"]) #extract heat exchanger flow direction
+        self.HXConductance=getCol(columns["HXConductance"]) #extract heat exchanger conductance
+        self.HXThickness=getCol(columns["HXThickness"]) #extract heat exchanger conductance
+        self.ISOConductance=getCol(columns["insulationConductance"]) #extract insulation conductance
+        # print(self.ISOConductance)
+        self.envTemperature=getCol(columns["envTemperature"]) #extract Tenv
+        self.tubeWallThickness=getCol(columns["tubeWallThickness"])
+        self.ISOThickness = getCol(columns["insulationThickness"])
+        self.tubeThermalConductance = getCol(columns["tubeThermalConductance"])
+        self.ISOThermalConductance = getCol(columns["insulationThermalConductance"])
+        self.HTCAir = getCol(columns["HTCAir"])
+        self.heatFlow=getCol(columns["heatFlow"])
+        self.dL=getCol(columns["dL"])
     def start(self):
         self.initialize_arrays()
         self.fine_config()
         self.redefine()
     def initialize_arrays(self):
-        self.HFLX = [float('nan')]*(len(self.Q))
-        for x in range(0, len(self.Q)):
-            if self.Q[x] == 0:
-                self.HFLX[x] = 0
-            elif all([np.isnan(i) for i in self.HF]):
-                self.HFLX[x]=self.HFinp[x]/(self.L[x]*np.pi*self.D[x]) #r_tube
-            elif self.Q[x] == -1:
-                self.HFLX[x]=self.QPower[x]/(self.L[x]*np.pi*self.D[x]) #Heatflux array
-            else:
-                self.HFLX[x]=self.HF[self.Q[x]-1]/(self.L[x]*np.pi*self.D[x]) #Heatflux array
+        tubeSurfaceArea = self.tubeSectionLength*np.pi*self.diameters
+        self.heatFlux = self.heatFlow/tubeSurfaceArea #self.[float('nan')]*(len(self.heatSource))
+        # for x in range(0, len(self.heatSource)):
+        #     if self.heatSource[x] == 0:
+        #         self.heatFlux[x] = 0
+        #     elif all([np.isnan(i) for i in self.heatFlow]):
+        #         self.heatFlux[x]=self.tubeWallThickness[x]/(self.tubeSectionLength[x]*np.pi*self.diameters[x]) #r_tube
+        #     elif self.heatSource[x] == -1:
+        #         self.heatFlux[x]=self.QPower[x]/(self.tubeSectionLength[x]*np.pi*self.diameters[x]) #Heatflux array
+        #     else:
+        #         self.heatFlux[x]=self.heatFlow[self.heatSource[x]-1]/(self.tubeSectionLength[x]*np.pi*self.diameters[x]) #Heatflux array
     def fine_config(self):
-        self.Lf=[0]
-        self.SP=[1]
-        self.Df=[float('nan')]
-        self.Anf=[float('nan')]
-        self.HFLXf=[float('nan')]
-        self.HXnode_f=[float('nan')]
-        self.HXflowdir_f=[float('nan')]
-        self.HXcond_f=[float('nan')]
-        self.HFLXf_app = [0]
-        self.ISOcond_f=[float('nan')]
-        self.Tenv_f=[float('nan')]
-        self.Af_per = [0]
-        self.Epf = [0]
-        for x in range(len(self.L)):
-            if np.isnan(self.HXnode[x]):
-                N = self.L[x]/self.dL
-            else:
-                N = self.L[self.HXnode[x]]/self.dL
-            N=roundup(N)
-            dLtm=self.L[x]/N
-            for y in range(len(self.Lf), int(N)+len(self.Lf)):
-                self.Lf.append(self.Lf[y-1]+dLtm)
-                self.Df.append(self.D[x])
-                self.Af_per.append(np.pi*self.Df[-1]*dLtm)
-                self.Anf.append(self.An[x])
-                self.Epf.append(self.Ep[x])
-                self.HFLXf_app.append(self.HFLX[x])
-                self.HXnode_f.append(self.HXnode[x])
-                self.HXflowdir_f.append(self.HXflowdir[x])
-                self.HXcond_f.append(self.HXcond[x])
-                self.ISOcond_f.append(self.ISOcond[x])
-                self.Tenv_f.append(self.Tenv[x])
-            self.SP.append(len(self.Lf))
-        self.VQ = [float('nan')]*len(self.Lf)
-        self.rm = [float('nan')]*len(self.Lf)
-        self.dH = [float('nan')]*len(self.Lf)
-        self.Tw = [float('nan')]*len(self.Lf)
-        self.HFLXf = [float('nan')]*len(self.Lf)
-        self.State = ['']*len(self.Lf)
+        self.fineLength=[0]
+        self.fineDiameter=[]
+        self.fineInclination=[]
+        self.fineHeatFlux=[]
+        self.fineHXNode=[]
+        self.fineHXFlowDir=[]
+        self.fineHXConductance=[]
+        self.fineAppliedHeatFlux = []
+        self.fineInsulationConductance=[]
+        self.fineEnvTemperature=[]
+        self.finePerimeterArea = []
+        self.fineRoughness = []
+        self.fineAirConductance = []
+        self.fineTubeWallThickness = []
+        self.fineInsulationThickness = []
+        self.fineTubeThermalConductance = []
+        self.finedLtm = []
+        self.fineHXThickness = []
+
+        # approximate dL to the closest value that allow for integer steps
+        dLtm = self.tubeSectionLength/np.round(self.tubeSectionLength/self.dL)
+        N = self.tubeSectionLength/dLtm
+
+        # if sections will exchange heat, assume they have the same number of elements
+        # if the section is only in thermal contact with air, HXNode == index of the section
+        for i in range(len(N)):
+            # print(self.HXNode[i])
+            N[i] = N[self.HXNode[i]]
+            dLtm[i] = self.tubeSectionLength[i]/N[i]
+
+        # probably have to add the 1 as first element
+        self.N = N
+        self.SP = np.cumsum(N)
+        self.SP = np.append([0],self.SP)
+        self.SP = self.SP.astype(int)
+        #self.SP+=1
+        for i,n in enumerate(N):
+            n = int(n)
+            self.fineLength = np.append(self.fineLength,
+                np.linspace(self.fineLength[-1], self.fineLength[-1]+self.tubeSectionLength[i], n))
+            self.fineDiameter = np.append(self.fineDiameter,[self.diameters[i]]*n)
+            self.finedLtm = np.append(self.finedLtm, [dLtm[i]]*n)
+            self.fineInclination = np.append(self.fineInclination, [self.tubeOrientationAngle[i]]*n)
+            self.fineRoughness = np.append(self.fineRoughness, [self.tubeRoughness[i]]*n)
+            self.fineAppliedHeatFlux = np.append(self.fineAppliedHeatFlux, [self.heatFlux[i]]*n)
+            self.fineHXNode = np.append(self.fineHXNode, [int(self.HXNode[i])]*n)
+            self.fineHXFlowDir = np.append(self.fineHXFlowDir, [self.HXFlowDir[i]]*n)
+            self.fineHXConductance = np.append(self.fineHXConductance, [self.HXConductance[i]]*n)
+            self.fineHXThickness = np.append(self.fineHXThickness, [self.HXThickness[i]]*n)
+            self.fineInsulationConductance = np.append(self.fineInsulationConductance, [self.ISOConductance[i]]*n)
+            self.fineEnvTemperature = np.append(self.fineEnvTemperature, [self.envTemperature[i]]*n)
+            self.fineAirConductance = np.append(self.fineAirConductance,[self.HTCAir[i]]*n)
+            self.fineTubeWallThickness = np.append(self.fineTubeWallThickness, [self.tubeWallThickness[i]]*n)
+            self.fineInsulationThickness = np.append(self.fineInsulationThickness, [self.ISOThickness[i]]*n)
+            self.fineTubeThermalConductance = np.append(self.fineTubeThermalConductance, [self.tubeThermalConductance[i]]*n)
+
+        # is this necessary?
+        # self.fineLength = self.fineLength[1:]
+        self.fineHXNode = self.fineHXNode.astype(int)
+        self.finePerimeterArea = np.pi*self.fineDiameter*self.finedLtm
+
+        #
+        # for x in range(len(self.tubeSectionLength)):
+        #     if np.isnan(self.HXNode[x]):
+        #         N = self.tubeSectionLength[x]/self.dL
+        #     else:
+        #         N = self.tubeSectionLength[self.HXNode[x]]/self.dL
+        #     N=roundup(N)
+        #     dLtm=self.tubeSectionLength[x]/N
+        #     for y in range(len(self.fineLength), int(N)+len(self.fineLength)):
+        #         self.fineLength.append(self.fineLength[y-1]+dLtm)
+        #         self.fineDiameter.append(self.diameters[x])
+        #         self.finePerimeterArea.append(np.pi*self.fineDiameter[-1]*dLtm)
+        #         self.fineInclination.append(self.tubeOrientationAngle[x])
+        #         self.fineRoughness.append(self.tubeRoughness[x])
+        #         self.fineAppliedHeatFlux.append(self.heatFlux[x])
+        #         self.fineHXNode.append(self.HXNode[x])
+        #         self.fineHXFlowDir.append(self.HXFlowDir[x])
+        #         self.fineHXConductance.append(self.HXConductance[x])
+        #         self.fineInsulationConductance.append(self.ISOConductance[x])
+        #         self.fineEnvTemperature.append(self.envTemperature[x])
+        #     self.SP.append(len(self.fineLength))
+        self.vaporQuality = np.zeros_like(self.fineLength) #[float('nan')]*len(self.fineLength)
+        self.relativeMass = np.zeros_like(self.fineLength)
+        self.dH = np.zeros_like(self.fineLength)
+        self.wallTemperature = np.zeros_like(self.fineLength)
+        self.fineHeatFlux = np.zeros_like(self.fineLength)
+        self.State = ['']*len(self.fineLength)
+        self.xia = np.zeros_like(self.fineLength)
+        self.Gwavy = np.zeros_like(self.fineLength)
+        self.Gwavy_xia = np.zeros_like(self.fineLength)
+        self.Gstrat = np.zeros_like(self.fineLength)
+        self.Gbub = np.zeros_like(self.fineLength)
+        self.Gmist = np.zeros_like(self.fineLength)
+        self.Gdry = np.zeros_like(self.fineLength)
+
+        # self.rm = [float('nan')]*len(self.fineLength)
+        # self.dH = [float('nan')]*len(self.fineLength)
+        # self.wallTemperature = [float('nan')]*len(self.fineLength)
+        # self.fineHeatFlux = [float('nan')]*len(self.fineLength)
+        # self.State = ['']*len(self.fineLength)
     def redefine(self):
-        self.HXnode_fCopy=self.HXnode_f #Redefine fine HX node arrangement taking flowdirection into account.
-        for x in range(1, len(self.SP)):
-            z=1;
-            # print(self.SP, x, self.HXflowdir_f)
-            if self.HXflowdir_f[self.SP[x]-1] == -1:  #counter current
-                N=self.HXnode_f[self.SP[x]-1];
-                for y in range(self.SP[x], self.SP[x-1]+1, -1):
-                   self.HXnode_f[y-1]=self.SP[N-1]+z;
-                   z=z+1;
-            elif self.HXflowdir_f[self.SP[x-1]] == 1: #co current
-                N=self.HXnode_f[self.SP[x]];
-                for y in range(self.SP[x-1]+1, self.SP[x]):
-                   self.HXnode_f[y-1]=self.SP[N-1]+z;
-                   z=z+1;
-        leng=1;
-        if not leng == len(self.Lf):
-            self.dP = []
-            self.HTC = []
-            self.P = []
-            self.T = []
-            self.H = []
-            self.MFLXf = []
-            for x in range(len(self.Lf)): # set initial arrays for itteration start
-                self.dP.append(1);
-                self.HTC.append(1);
-                self.P.append(self.refpropm('P','T',self.Tsp+273.15,'Q',0,self.Fluid)*1e-2);
-                if self.Tsc == 'sat':
-                    self.T.append(self.Tsp)
-                else:
-                    self.T.append(self.Tsp+self.Tsc)
-                self.H.append(self.refpropm('H','T',self.Tsp+273.15,'Q',0,self.Fluid))
-                self.MFLXf.append(self.Df[x] if not self.Df[x] else self.MF/(0.25*pi*self.Df[x]**2));
+        self.fineHXNode_fCopy=self.fineHXNode #Redefine fine HX node arrangement taking flowdirection into account.
+        # print(self.fineHXNode);
+        # print(self.SP)
+        # print(self.fineHXNode)
+        for i in range(len(self.SP)-1):
+            if self.fineHXFlowDir[self.SP[i]] == 0:
+                # for j in range(self.SP[i], self.SP[i+1]):
+                self.fineHXNode_fCopy[self.SP[i]:self.SP[i+1]] = range(self.SP[i], self.SP[i+1])
+            elif self.fineHXFlowDir[self.SP[i]] == -1:
+                self.fineHXNode_fCopy[self.SP[i]:self.SP[i+1]] = range(self.SP[self.fineHXNode[self.SP[i]]+1]-1, self.SP[self.fineHXNode[self.SP[i]]]-1, -1)
+            else:
+                self.fineHXNode_fCopy[self.SP[i]:self.SP[i+1]] = range(self.SP[self.fineHXNode[self.SP[i]]], self.SP[self.fineHXNode[self.SP[i]]+1], 1)
+
+        self.fineHXNode = self.fineHXNode_fCopy
+
+        self.dP = np.ones_like(self.fineLength)
+        self.HTC = np.ones_like(self.fineLength)
+        _pressure = self.refpropm('P','T',self.setPointTemp+self.subCoolingTemp+273.15,'Q',0,self.Fluid)*1e-2
+        _enthalpy = self.refpropm('H','T',self.setPointTemp+self.subCoolingTemp+273.15,'Q',0,self.Fluid)
+        self.P = np.ones_like(self.fineLength)*_pressure
+        # subcooling temperature has to be set to 0 if CO2 is in saturation
+        self.T = np.ones_like(self.fineLength)*(self.setPointTemp+self.subCoolingTemp)
+        self.H = np.ones_like(self.fineLength)*_enthalpy
+
+        # This is the set point information, which is fixed
+        _setPointPressure = self.refpropm('P','T',self.setPointTemp+273.15,'Q',0,self.Fluid)*1e-2
+        _setPointEnthalpy = self.refpropm('H','T',self.setPointTemp+273.15,'Q',0,self.Fluid)
+        self.T[-1]=self.setPointTemp
+        self.P[-1]=_setPointPressure
+        self.H[-1]=_setPointEnthalpy
+
+        self.fineMassFlux = self.massFlow/(0.25*np.pi*self.fineDiameter*self.fineDiameter)
+
+        self.fineEnvHeatFlux = np.zeros_like(self.fineLength)
+        self.fineHXHeatFlux = np.zeros_like(self.fineLength)
 
     def run(self):
         itt=0;
@@ -156,130 +237,99 @@ class CoolingBranch_v1a:
         convlimit=40;
         conv_repeat=0;
         conv_repeat_limit=3;
-        self.HFLXf_hx = [float('nan')]*len(self.Lf)
-        self.HFf_hx = [0]*len(self.Lf)
-        self.HFLXf_env = [0]*len(self.Lf)
+        self.HFLXf_hx = [float('nan')]*len(self.fineLength)
+        self.HFf_hx = [0]*len(self.fineLength)
         self.Hconv = []
         self.HTCconv = []
         ittstop = 400
+        avgHTC=0
         while (abs(converge)>convlimit or conv_repeat<conv_repeat_limit+1) and itt<ittstop:
             foo = True
             itt+=1
-            print("Iteration Round: {}".format(itt))
+            print("\nIteration Round: {}".format(itt))
             print("Iteration offset: {} (Stops at {})".format(converge, convlimit))
             print("Enthalpy: {} J/kg".format(max(self.H)))
             print("Iteration offset: {} (Stops at {})".format(conv_repeat, conv_repeat_limit))
-            Pprev = self.P
-            Tprev = self.T
-            HTCprev = self.HTC
-            Hprev = self.H
+            Pprev = np.copy(self.P)
+            Tprev = np.copy(self.T)
+            HTCprev = np.copy(self.HTC)
+            Hprev = np.copy(self.H)
             if converge < 1000:
                 HXstart = 1
             times = {1: 0, 2: 0, 3: 0, 4: 0}
             startTime = time()
-            # rows, columns = os.popen('stty size', 'r').read().split()
             columns, rows = os.get_terminal_size()
-            for x in range(1, len(self.Lf)): #2:length(Lf)
+            for x in range(len(self.fineLength)-3,-1,-1): #2:length(Lf)
+                #used to be range(len...-2, -1, -1)
                 elapsed = time()-startTime
-                total = elapsed*len(self.Lf)/x
+                total = elapsed*((len(self.fineLength)-2)-x)/(len(self.fineLength)-2)
                 remaining = total-elapsed
-                prefix = "\r{}/{} ({}%) [Elapsed time: {} Remaining time: {}] ".format(x+1, len(self.Lf), round(x/len(self.Lf)*100), round(elapsed), round(remaining))
+                prefix = "\r{}/{} ({}%) [Elapsed time: {} Remaining time: {}] ".format(len(self.fineLength)-(x+2), len(self.fineLength)-2, round((len(self.fineLength)-x)/len(self.fineLength)*100), round(elapsed), round(remaining))
                 progressbar_len = int(columns) - (len(prefix) + 2)
-                progressbar = "".join(["#" if j <= x*progressbar_len//len(self.Lf) else "." for j in range(progressbar_len)])
+                progressbar = "".join(["#" if j <= (len(self.fineLength)-x)*progressbar_len//len(self.fineLength) else "." for j in range(progressbar_len)])
                 sys.stdout.write(prefix+"["+progressbar+"]");
                 sys.stdout.flush()
-                # print(len(self.Lf))
-                # print("{}/{}".format(x, len(self.Lf)))
-                #section 1
-                # start = time()
-                if np.isnan(self.ISOcond_f[x]): #find environmental leak
-                    self.HFLXf_env[x] = 0
+                # print(len(self.fineLength))
+                # print("{}/{}".format(x, len(self.fineLength)))
+                start = time()
+                # print(self.fineHXNode[x+1])
+                # print(x+1)
+                # print(self.fineHXNode[x], x)
+                if self.fineHXNode[x] == x:
+                    # print(x)
+                    #if in contact with self
+                    avgHTC = (self.HTC[x]+self.HTC[x+1])/2
+                    # print(self.HTC[x], self.HTC[x+1])
+                    envResistance = 1/self.fineAirConductance[x] + self.fineInsulationThickness[x]/self.fineInsulationConductance[x]+self.fineTubeWallThickness[x]/self.fineTubeThermalConductance[x]+1/avgHTC
+                    self.fineEnvHeatFlux[x] = (self.fineEnvTemperature[x]-self.T[x])/envResistance
+#_______________________________________
+#                                       |
+#              MODEL                    |
+#                                       |
+#              Air                      |
+#              Insulation               |
+#              Tube                     |
+#              Fluid                    |
+#                                       |
+#_______________________________________|
                 else:
-                    HFLXf_env_prev = self.HFLXf_env[x]
-                    self.HFLXf_env[x] = ((self.Tenv_f[x]-self.T[x])*(((self.HTC[x]*self.Af_per[x])**(-1)+(self.ISOcond_f[x]*(self.Lf[x]-self.Lf[x-1]))**(-1))**(-1)))/self.Af_per[x]
-                    n = 0.1 #average heat exchange load over 1/n samples (To stabilze conversion)
-                    self.HFLXf_env[x] = HFLXf_env_prev*(1-n)+self.HFLXf_env[x]*n
-                # times[1]+=(time()-start)
-                #section 2
-                # start = time()
-                if np.isnan(self.HXcond_f[x]):
-                    if np.isnan(self.HFLXf_hx[x]) or abs(self.HFLXf_hx[x]) < 0:
-                        self.HFLXf_hx[x] = 0
-                elif HXstart == 1: #if heat exchange node exist calculate heat exchange by temperature difference
-                    HFf_hx_prev = HFf_hx[x]
-                    self.HFf_hx[x]=((self.T[self.HXnode_f[x]-1]-self.T[x])*(((self.HTC[x]*self.Af_per[x])**(-1)+(self.HXcond_f[x]*(self.Lf[x]-self.Lf[x-1]))**(-1)+(self.HTC[self.HXnode_f[x]-1]*self.Af_per[self.HXnode_f[x]-1])**(-1))**(-1)))
-                    n = 0.1 #average heat exchange load
-                    self.HFf_hx[x] = HFf_hx_prev*(1-n)+self.HFf_hx[x]*n
-                    self.HFf_hx[self.HXnode_f[x]-1] = -HFf_hx[x]
-                    self.HFLXf_hx[x]=self.HFf_hx[x]/self.Af_per[x]
-                    self.HFLXf_hx[HXnode_f[x]-1]=self.HFf_hx[HXnode_f[x]-1]/self.Af_per[self.HXnode_f[x]-1]
-                else:
-                    HFLXf_hx[x] = 0
-                # times[2]+=(time()-start)
-                #section 3
-                # start = time()
-                if self.nargin >= 11 and len(self.HFf) == len(self.Lf):
-                    self.HFLXf[x] = self.HFf[x]/self.Af_per[x]+self.HFLXf_hx[x]
-                else:
-                    self.HFLXf[x]=self.HFLXf_env[x]+self.HFLXf_hx[x]+self.HFLXf_app[x]
-                    if all(np.isnan(self.HF)):
-                        self.HFf = [sum(self.HFinp)]
-                    else:
-                        self.HFf = [sum(self.HF)]
-                # times[3]+=(time()-start)
-                #section 4
-                # start = time()
+                    nodeIndex = int(self.fineHXNode[x])
+                    avgHTC = (self.HTC[x]+self.HTC[x+1])/2
+                    avgNodeHTC = (self.HTC[nodeIndex]+self.HTC[nodeIndex+1])/2
+                    hxResistance = 1/avgHTC+self.fineHXThickness[x]/self.fineHXConductance[x]+1/avgNodeHTC
+                    self.fineHXHeatFlux[x] = (self.T[nodeIndex]-self.T[x])/hxResistance
+                    # print(self.fineHXThickness[x], self.fineHXConductance[x], hxResistance, self)
+                    # break;
+
+                self.fineHeatFlux[x] = self.fineEnvHeatFlux[x]+self.fineHXHeatFlux[x]+self.fineAppliedHeatFlux[x]
                 if self.Fluid == 'CO2' and self.H[x] < 9e4: #avoid enthalpy to get into freezing area for cO2.
                     self.H[x] = 9e4
-                # print("Entering dPandHTC...")
-                newDP, newHTC, newVQ, newRM, newState, newT = dPandHTC(self.Fluid, self.P[x], self.H[x], self.MFLXf[x], self.HFLXf[x], self.Df[x], 0.25*pi*self.Df[x]**2, pi*self.Df[x], self.Epf[x], self.Anf[x], self.Tsh, self.refpropm);
-                # print("{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(self.Fluid, self.P[x], self.H[x], self.MFLXf[x], self.HFLXf[x], self.Df[x], 0.25*pi*self.Df[x]**2, pi*self.Df[x], self.Epf[x], self.Anf[x], self.Tsh))
-                # times[4]+=(time()-start)
-                # print("Exiting dPandHTC...")
+
+                newDP, newHTC, newVQ, newRM, newState, newT, newXia, newGwavy, newGwavy_xia, newGstrat, newGbub, newGmist, newGdry = dPandHTC(self.Fluid, round(self.P[x], 5), self.H[x], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp, self.refpropm);
+                # print(newDP, newHTC, newVQ, newRM, newState, newT)
                 self.dP[x] = newDP
                 self.HTC[x] = newHTC
-                self.VQ[x] = newVQ
-                self.rm[x] = newRM
+                self.vaporQuality[x] = newVQ
+                self.relativeMass[x] = newRM
                 self.State[x] = newState
                 self.T[x] = newT
-                self.dH[x] = (self.HFLXf[x]*pi*self.Df[x]*(self.Lf[x]-self.Lf[x-1]))/self.MF #calculate enthalpy difference, mass not mol
-                # print(self.dH[x
-                if(abs(self.dH[x]) > 1e6):
-                    foo = False
-                    break
-                self.Tw[x] = self.T[x]+(self.HFLXf[x]/self.HTC[x]) #wall temperature
-                self.H[x] = self.H[x-1]+self.dH[x] #calculate new enthalpy
-                # print(self.dH[x])
+                self.xia[x] = float('nan') if not newXia else newXia.real
+                self.Gwavy[x] = float('nan') if not newGwavy else newGwavy.real
+                self.Gwavy_xia[x] = float('nan') if not newGwavy_xia else newGwavy_xia.real
+                self.Gstrat[x] = float('nan') if not newGstrat else newGstrat.real
+                self.Gbub[x] = float('nan') if not newGbub else newGbub.real
+                self.Gmist[x] = float('nan') if not newGmist else newGmist.real
+                self.Gdry[x] = float('nan') if not newGdry else newGdry.real
+                # print(self.fineHeatFlux[x], self.fineDiameter[x], self.fineLength[x+1], self.fineLength[x])
+                self.dH[x] = -(self.fineHeatFlux[x]*pi*self.fineDiameter[x]*(self.fineLength[x+1]-self.fineLength[x]))/self.massFlow #calculate enthalpy difference, mass not mol
 
-            # print(times)
-                #end for loop
-            # foo = max([i for i in self.dH if not np.isnan(i)])
-            # if foo > 1e6:
-            #     break
-            if not foo:
-                break
-            self.P[-1] = self.refpropm('P','T',self.Tsp+273.15,'Q',1,self.Fluid)*1e-2;
-            for x in range(len(self.Lf)-2, -1, -1):
-                self.P[x] = self.P[x+1]+self.dP[x+1]*(self.Lf[x+1]-self.Lf[x]) #calculate new pressure
-            if self.Tsc == 'sat': #force inlet to be saturated
-                self.H[0] = self.refpropm('H','P',min(73, self.P[0])*1e2,'Q',0,self.Fluid) #saturated inlet enthalpy
-                # if self.P[0] > 73:
-                #     self.H[0] = refpropm('H','P',73*1e2,'Q',0,self.Fluid)
-                # else:
-                #     self.H[0] = refpropm('H','P',self.P[0]*1e2,'Q',0,self.Fluid) #saturated inlet enthalpy
-                self.VQ[0] = 0
-                self.T[0] = float('nan')
-            elif type(self.Tsc) == str and self.Tsc[0] == 'x':
-                xi = int(self.Tsc[1:])/100
-                self.H[0] = self.refpropm('H','P',self.P[0]*1e2,'Q',xi,self.Fluid) #calculate saturated inlet enthalpy
-                self.VQ[0] = xi
-                self.T[0] = float('nan')
-            else:
-                self.H[0] = self.refpropm('H','T',self.T[0]+273.15,'P',self.P[0]*1e2,self.Fluid) #calculate inlet enthalpy based on given inlet temperature
+                avgHTC = (self.HTC[x]+self.HTC[x+1])/2
+                partialResistance = self.fineTubeWallThickness[x+1]/self.fineTubeThermalConductance[x+1]+1/avgHTC
+                self.wallTemperature[x] = self.T[x]+self.fineHeatFlux[x]*partialResistance #wall temperature
+                self.H[x] = self.H[x+1]-self.dH[x] #calculate new enthalpy
+                self.P[x] = self.P[x+1]+self.dP[x+1]*(self.fineLength[x+1]-self.fineLength[x]) #calculate new pressure
+                # print(self.H[x+1])
 
-            self.Tw[0] = float('nan')
-            # Pconv=P-Pprev;
-            # Tconv=T-Tprev;
             self.Hconv = np.array(self.H)-np.array(Hprev)
             self.HTCconv = np.array(self.HTC)-np.array(HTCprev)
             converge_prev = converge
@@ -290,9 +340,63 @@ class CoolingBranch_v1a:
                 conv_repeat = 0
             #end while loop
     def plot(self):
-        pass
+        self.satTemperature = np.zeros_like(self.fineLength)
+        for i in range(len(self.fineLength)):
+            self.satTemperature[i] = self.refpropm('T','P',self.P[i]*1e2,'Q',self.vaporQuality[i], self.Fluid)-273.15
 
-x = CoolingBranch_v1a('CO2', -25, 0, 0, 5*1.516e-3, [134.4,100], {'filename': '../CoBraV1a_example.xlsx', 'sheetname': 'Example'}, 10e-3, "Plot", 0, [3600])
+        #Intermittent to Annular Flow Transition Boundary
+        fig, ax1 = pl.subplots(1)
+        # fig, ax1 = pl.subplots()
+        yax2 = ax1.twinx()
+        ax1.plot(self.fineLength, self.T, 'g-', label='Temperature (Fluid)')
+        ax1.plot(self.fineLength, self.wallTemperature, 'b-', label='Wall Temperature')
+        ax1.plot(self.fineLength, self.satTemperature, 'c-', label='Saturated Temperature (Fluid)')
+        yax2.plot(self.fineLength, self.P, 'r-', label='Pressure (bar)')
+        ax1.legend()
+        yax2.legend()
+        ax1.set_xlabel('Length (m)')
+        ax1.set_ylabel('Temperature (C)', color='g')
+        yax2.set_ylabel('Pressure (bar)', color='b')
+        fig2, ax2 = pl.subplots(1)
+
+        ax2.axis(xmin=0, xmax=1)
+        # ax2.plot(self.vaporQuality, self.fineHeatFlux, 'g-', label='Heat Flux')
+        ax2.plot(self.vaporQuality, self.xia, label='xia')
+        ax2.axvline(x=self.xia[0])
+        ax2.plot(self.vaporQuality, self.Gstrat, label='Gstrat')
+        ax2.plot(self.vaporQuality, self.Gbub, label='Gbub')
+        ax2.plot(self.vaporQuality, self.Gmist, label='Gmist')
+        ax2.plot(self.vaporQuality, self.Gwavy, label='Gwavy')
+        ax2.plot(self.vaporQuality, self.Gdry, label='Gdry')
+        ax2.set_xlabel('Vapor Quality')
+        ax2.set_ylabel('Heat Flux (kW/m^2)')
+        ax2.legend()
+        # ax2.plot(self.fineLength, self.vaporQuality, 'r-')
+        # ax2.set_xlabel('Length (m)')
+        # ax2.set_ylabel('Vapor Quality (Fraction)')
+        # fig3, ax3 = pl.subplots(1)
+        # ax3.plot(self.vaporQuality, self.HTC, 'c-')
+        # ax3.set_xlabel('Vapor Quality (Fraction)')
+        # ax3.set_ylabel('Heat Transfer Coefficient kW/m^2K')
+        # fig, apl.figure(1)
+        # pl.
+        # pl.scatter(self.P, self.T)
+        # pl.xlabel("pressure")
+        # pl.ylabel("temperature")
+        # pl.figure(2)
+        # pl.scatter(self.T, self.HTC)
+        # pl.xlabel("temperature")
+        # pl.ylabel("HTC")
+        # pl.figure(3)
+        # pl.scatter(x.HTC, x.fineHeatFlux)
+        # pl.xlabel("HTC")
+        # pl.ylabel("heat flux")
+        pl.show(block=True)
+        #P vs T (Tw)
+
+
+x = CoolingBranch_v1a('CO2', -25, 0, 0, 5*1.516e-3, {'filename': '../CoBraV1a_example.xlsx', 'sheetname': 'Example'}, "Plot", 0)
 x.start()
 x.run()
-print("Completed.")
+print("Completed. Plotting...")
+x.plot()
