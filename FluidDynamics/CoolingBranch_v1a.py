@@ -47,10 +47,9 @@ class CoolingBranch_v1a:
             "tubeWallThickness": 11,
             "insulationThickness": 12,
             "tubeThermalConductance": 13,
-            "insulationThermalConductance": 14,
-            "HTCAir": 15,
-            "heatFlow": 16,
-            "dL": 17
+            "HTCAir": 14,
+            "heatFlow": 15,
+            "dL": 16
         }
         data = minidom.parse("../CoBraV1a_example.xml")
         params = data.getElementsByTagName("parameter")
@@ -71,7 +70,6 @@ class CoolingBranch_v1a:
         self.tubeWallThickness=getCol(columns["tubeWallThickness"])
         self.ISOThickness = getCol(columns["insulationThickness"])
         self.tubeThermalConductance = getCol(columns["tubeThermalConductance"])
-        self.ISOThermalConductance = getCol(columns["insulationThermalConductance"])
         self.HTCAir = getCol(columns["HTCAir"])
         self.heatFlow=getCol(columns["heatFlow"])
         self.dL=getCol(columns["dL"])
@@ -267,8 +265,8 @@ class CoolingBranch_v1a:
                 prefix = "\r{}/{} ({}%) [Elapsed time: {} Remaining time: {}] ".format(len(self.fineLength)-(x+2), len(self.fineLength)-2, round((len(self.fineLength)-x)/len(self.fineLength)*100), round(elapsed), round(remaining))
                 progressbar_len = int(columns) - (len(prefix) + 2)
                 progressbar = "".join(["#" if j <= (len(self.fineLength)-x)*progressbar_len//len(self.fineLength) else "." for j in range(progressbar_len)])
-                sys.stdout.write(prefix+"["+progressbar+"]");
-                sys.stdout.flush()
+                #sys.stdout.write(prefix+"["+progressbar+"]");
+                #sys.stdout.flush()
                 # print(len(self.fineLength))
                 # print("{}/{}".format(x, len(self.fineLength)))
                 start = time()
@@ -300,19 +298,25 @@ class CoolingBranch_v1a:
                     self.fineHXHeatFlux[x] = (self.T[nodeIndex]-self.T[x])/hxResistance
                     # print(self.fineHXThickness[x], self.fineHXConductance[x], hxResistance, self)
                     # break;
-
+                # print(self.fineEnvHeatFlux[x])
+                if np.isnan(self.fineHXHeatFlux[x]):
+                    print(self.fineHXHeatFlux)
+                    break
                 self.fineHeatFlux[x] = self.fineEnvHeatFlux[x]+self.fineHXHeatFlux[x]+self.fineAppliedHeatFlux[x]
                 if self.Fluid == 'CO2' and self.H[x] < 9e4: #avoid enthalpy to get into freezing area for cO2.
                     self.H[x] = 9e4
 
-                newDP, newHTC, newVQ, newRM, newState, newT, newXia, newGwavy, newGwavy_xia, newGstrat, newGbub, newGmist, newGdry = dPandHTC(self.Fluid, round(self.P[x], 5), self.H[x], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp, self.refpropm);
+                newDP, newHTC, newVQ, newRM, newState, newT, newXia, newGwavy, newGwavy_xia, newGstrat, newGbub, newGmist, newGdry = dPandHTC(self.Fluid, round(self.P[x], 5), self.H[x], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp, self.refpropm,x==316);
                 # print(newDP, newHTC, newVQ, newRM, newState, newT)
+                # if x==316:
+                #     print('debug1',newDP,newHTC,self.fineHeatFlux[x],self.P[x],round(self.P[x], 5),self.T[x],newT)
                 self.dP[x] = newDP
                 self.HTC[x] = newHTC
                 self.vaporQuality[x] = newVQ
                 self.relativeMass[x] = newRM
                 self.State[x] = newState
                 self.T[x] = newT
+                # print(newT)
                 self.xia[x] = float('nan') if not newXia else newXia.real
                 self.Gwavy[x] = float('nan') if not newGwavy else newGwavy.real
                 self.Gwavy_xia[x] = float('nan') if not newGwavy_xia else newGwavy_xia.real
@@ -321,8 +325,9 @@ class CoolingBranch_v1a:
                 self.Gmist[x] = float('nan') if not newGmist else newGmist.real
                 self.Gdry[x] = float('nan') if not newGdry else newGdry.real
                 # print(self.fineHeatFlux[x], self.fineDiameter[x], self.fineLength[x+1], self.fineLength[x])
-                self.dH[x] = -(self.fineHeatFlux[x]*pi*self.fineDiameter[x]*(self.fineLength[x+1]-self.fineLength[x]))/self.massFlow #calculate enthalpy difference, mass not mol
 
+                self.dH[x] = -(self.fineHeatFlux[x]*pi*self.fineDiameter[x]*(self.fineLength[x+1]-self.fineLength[x]))/self.massFlow #calculate enthalpy difference, mass not mol
+                # print(self.dH[x], self.fineHeatFlux[x], self.T[x], self.T[x+1])
                 avgHTC = (self.HTC[x]+self.HTC[x+1])/2
                 partialResistance = self.fineTubeWallThickness[x+1]/self.fineTubeThermalConductance[x+1]+1/avgHTC
                 self.wallTemperature[x] = self.T[x]+self.fineHeatFlux[x]*partialResistance #wall temperature
@@ -361,15 +366,15 @@ class CoolingBranch_v1a:
 
         ax2.axis(xmin=0, xmax=1)
         # ax2.plot(self.vaporQuality, self.fineHeatFlux, 'g-', label='Heat Flux')
-        ax2.plot(self.vaporQuality, self.xia, label='xia')
-        ax2.axvline(x=self.xia[0])
+        # ax2.plot(self.vaporQuality, self.xia, label='xia')
+        #ax2.axvline(x=self.xia[0])
         ax2.plot(self.vaporQuality, self.Gstrat, label='Gstrat')
         ax2.plot(self.vaporQuality, self.Gbub, label='Gbub')
         ax2.plot(self.vaporQuality, self.Gmist, label='Gmist')
         ax2.plot(self.vaporQuality, self.Gwavy, label='Gwavy')
         ax2.plot(self.vaporQuality, self.Gdry, label='Gdry')
         ax2.set_xlabel('Vapor Quality')
-        ax2.set_ylabel('Heat Flux (kW/m^2)')
+        ax2.set_ylabel('Mass Flux (kg/m^2s)')
         ax2.legend()
         # ax2.plot(self.fineLength, self.vaporQuality, 'r-')
         # ax2.set_xlabel('Length (m)')

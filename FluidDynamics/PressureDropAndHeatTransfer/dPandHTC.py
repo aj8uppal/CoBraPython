@@ -18,7 +18,7 @@ sind = lambda x: sin(x)*180/pi
 #determine state of fluid based on various parameters
 #based on state, determine model for predicting dP and HTC
 
-def dPandHTC(Fluid,P,H,MFLX,HFLX,Dh,A,Ph,Ep,Angle,SH, refpropm):
+def dPandHTC(Fluid,P,H,MFLX,HFLX,Dh,A,Ph,Ep,Angle,SH, refpropm,prt=False):
     # RPI = RefPropInterface()
     # refpropm = RPI.refpropm
     dP=-1;
@@ -79,8 +79,14 @@ def dPandHTC(Fluid,P,H,MFLX,HFLX,Dh,A,Ph,Ep,Angle,SH, refpropm):
             VQ=(H-Hsatliq)/(Hsatgas-Hsatliq)
 
     T=refpropm('T','P',P*1e2,'H',H,Fluid)-273.15;
-    if abs(T) > 1e6:
-        print(T, P, H)
+    # print(T, P, H)
+    # if abs(T) > 1e5:
+    #     print(P, H)
+    if False:
+        print('debug2',State,T,P,H)
+    #if abs(T) > 1e6:
+    #    print(State)
+    #    print(T, P, H)
     # print(State)
     if State == 'supercritical':
         # t1 = time()
