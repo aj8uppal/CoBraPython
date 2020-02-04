@@ -1,5 +1,5 @@
 from cmath import log, sqrt, log10
-from numpy import pi, cos, exp, sin
+from numpy import pi, cos, exp, sin, isnan
 import sys
 sys.path.append('..')
 from BlasiusCorrelation import *
@@ -354,6 +354,7 @@ def F_HTC_8123con(G, q, d, A, x, e, FilmAngle, Dl, Dv, CPl, Kl, Hl, Hv, Vl, ST):
     htcFilm=F_htcFilm_8143con(q,d,Dl,Dv,Kl,Vl,Hl,Hv);
     #htp
     htc=(htcFilm*FilmAngle+(2*pi-FilmAngle)*htcAxial)/(2*pi);
+
     return htc
 
 def F_htcFilm_8143con(q, d, Dl, Dv, Kl, Vl, Hl, Hv):
@@ -369,7 +370,7 @@ def F_htcAxial_8132con(G, d, A, x, e, Dl, Dv, CPl, Kl, Vl, ST):
     dfilm=F_dfilm_8135con(G,d,A,x,e,Dl,Dv,Vl,ST);
     # print(G, d, A, x, e, Dl, Dv, Vl, ST);
 
-    Rel=F_ReL_8133con(G,x,e,Vl,dfilm);
+    Rel=float(F_ReL_8133con(G,x,e,Vl,dfilm));
     Pr=F_Prandtx( CPl,Kl,Vl) ;
     Gstrat=F_Gstrat_17con(d,A,x,e,Dl,Dv,Vl);
     fi=F_fi_8140con(G,d,A,x,e,Dl,Dv,Vl,ST);

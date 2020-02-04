@@ -1,4 +1,5 @@
 from Correlations import *
+from numpy import isnan
 # import sys
 # sys.path.append('../../REFPROP')
 # from refprop import RefPropInterface
@@ -64,7 +65,7 @@ def ThomeCorrelation_Con(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     # print(Gmist, x, xia, G, Gbub)
     #flow definition
 
-
+    # print(G, Gmist, x, xia)
     if G <= Gstrat:
         #fully stratified flow
         flowpattern = 'Strat'
@@ -75,18 +76,18 @@ def ThomeCorrelation_Con(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     elif G >= Gwavy and G <= Gmist.real and x <= xia and G <= Gbub.real:
         flowpattern='Int';
         FilmAngle = 0
-    elif G <= Gmist and x <= xia and G > Gbub:
+    elif G <= Gmist.real and x <= xia and G > Gbub.real:
         flowpattern = 'Bub'
         FilmAngle = 0
-    elif G>=Gwavy and G<=Gmist and x>xia:
+    elif G>=Gwavy and G<=Gmist.real and x>xia:
         flowpattern = 'Annu'
         FilmAngle = 0
-    elif G > Gmist and G >= Gstrat:
+    elif G > Gmist.real and G >= Gstrat:
         flowpattern = 'Mist'
         FilmAngle = 0
     else:
         flowpattern = 'NotIdentified'
-
+    # print(flowpattern)
     if flowpattern == 'Strat':
         DPf=F_DPstrat_52(G,d,x,e,Dl,Dv,Vl,Vv,ST );
         htp=F_HTC_8123con( G,q,d,A,x,e,FilmAngle,Dl,Dv,CPl,Kl,Hl,Hv,Vl,ST)
@@ -103,6 +104,8 @@ def ThomeCorrelation_Con(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     elif flowpattern == 'Mist':
         DPf=F_DPmist_45(G,d,x,Dl,Dv,Vl,Vv);
         htp=F_HTC_8123con( G,q,d,A,x,e,FilmAngle,Dl,Dv,CPl,Kl,Hl,Hv,Vl,ST);
+        # if(isnan(htp)):
+        #     breakpoint()
     elif flowpattern == 'Bub':
         DPf=F_DPbub_56(G,d,x,e,Dl,Dv,Vl,Vv,ST );
         htp=F_HTC_8123con( G,q,d,A,x,e,FilmAngle,Dl,Dv,CPl,Kl,Hl,Hv,Vl,ST);

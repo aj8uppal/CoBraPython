@@ -280,6 +280,7 @@ class CoolingBranch_v1a:
                     # print(self.HTC[x], self.HTC[x+1])
                     envResistance = 1/self.fineAirConductance[x] + self.fineInsulationThickness[x]/self.fineInsulationConductance[x]+self.fineTubeWallThickness[x]/self.fineTubeThermalConductance[x]+1/avgHTC
                     self.fineEnvHeatFlux[x] = (self.fineEnvTemperature[x]-self.T[x])/envResistance
+                    # print(avgHTC)
 #_______________________________________
 #                                       |
 #              MODEL                    |
@@ -300,7 +301,7 @@ class CoolingBranch_v1a:
                     # break;
                 # print(self.fineEnvHeatFlux[x])
                 if np.isnan(self.fineHXHeatFlux[x]):
-                    print(self.fineHXHeatFlux)
+                    # print(self.fineHXHeatFlux)
                     break
                 self.fineHeatFlux[x] = self.fineEnvHeatFlux[x]+self.fineHXHeatFlux[x]+self.fineAppliedHeatFlux[x]
                 if self.Fluid == 'CO2' and self.H[x] < 9e4: #avoid enthalpy to get into freezing area for cO2.
@@ -312,6 +313,7 @@ class CoolingBranch_v1a:
                 #     print('debug1',newDP,newHTC,self.fineHeatFlux[x],self.P[x],round(self.P[x], 5),self.T[x],newT)
                 self.dP[x] = newDP
                 self.HTC[x] = newHTC
+                # print("foo", self.HTC[x])
                 self.vaporQuality[x] = newVQ
                 self.relativeMass[x] = newRM
                 self.State[x] = newState
@@ -327,7 +329,10 @@ class CoolingBranch_v1a:
                 # print(self.fineHeatFlux[x], self.fineDiameter[x], self.fineLength[x+1], self.fineLength[x])
 
                 self.dH[x] = -(self.fineHeatFlux[x]*pi*self.fineDiameter[x]*(self.fineLength[x+1]-self.fineLength[x]))/self.massFlow #calculate enthalpy difference, mass not mol
-                # print(self.dH[x], self.fineHeatFlux[x], self.T[x], self.T[x+1])
+                if np.isnan(self.dH[x]):
+                    # print(self.dH[x], self.fineEnvHeatFlux[x], self.fineHXHeatFlux[x], self.fineAppliedHeatFlux[x], self.T[x])
+                    # print(self.HTC[x+1])
+                    break
                 avgHTC = (self.HTC[x]+self.HTC[x+1])/2
                 partialResistance = self.fineTubeWallThickness[x+1]/self.fineTubeThermalConductance[x+1]+1/avgHTC
                 self.wallTemperature[x] = self.T[x]+self.fineHeatFlux[x]*partialResistance #wall temperature
