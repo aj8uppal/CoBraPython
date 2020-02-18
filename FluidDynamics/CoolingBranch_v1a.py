@@ -20,7 +20,7 @@ warnings.filterwarnings('ignore')
 class CoolingBranch_v1a:
     refpropm = RefPropInterface().refpropm
     p=False
-    def __init__(self, Fluid, Tsp, Tsc, Tsh, MF, config, name, plt):
+    def __init__(self, Fluid, Tsp, Tsc, Tsh, MF, xml, branch=None):
         #config = {filename: , sheetname: }
         self.Fluid = Fluid
         self.setPointTemp = Tsp #C
@@ -28,10 +28,9 @@ class CoolingBranch_v1a:
         self.allowedSuperHeatTemp = Tsh #C
         self.massFlow = MF #kg/s
 #        self.heatFlow = HF #watts
-        self.name = name
-        self.plt = plt
 #        self.HFf = HFf #?
         self.nargin = len(signature(CoolingBranch_v1a).parameters)
+        self.branch=branch
         columns = {
             "section": 0,
             "hydraulicDiameter": 1, # in mm
@@ -51,8 +50,9 @@ class CoolingBranch_v1a:
             "heatFlow": 15,
             "dL": 16
         }
-        data = minidom.parse("../CoBraV1a_example.xml")
-        params = data.getElementsByTagName("parameter")
+        data = minidom.parse(xml)
+        # breakpoint()
+        params = data.getElementsByTagName("parameter") if not branch else data.getElementsByTagName("branch")[int(branch)].getElementsByTagName("parameter")
         # df = pd.read_excel(config['filename'], sheet_name=config['sheetname'])
         getCol = lambda N: np.array(list(map(float, ["nan" if len(i.toxml()) == 8 else i.firstChild.data for i in params[N].getElementsByTagName("value")])))
         self.diameters=getCol(columns["hydraulicDiameter"])/1e3 # extract hydraulic diameter
@@ -209,8 +209,8 @@ class CoolingBranch_v1a:
 
         self.dP = np.ones_like(self.fineLength)
         self.HTC = np.ones_like(self.fineLength)
-        _pressure = self.refpropm('P','T',self.setPointTemp+self.subCoolingTemp+273.15,'Q',0,self.Fluid)*1e-2
-        _enthalpy = self.refpropm('H','T',self.setPointTemp+self.subCoolingTemp+273.15,'Q',0,self.Fluid)
+        _pressure = self.refpropm('P','T',self.setPointTemp+self.subCoolingTemp+273.15,'Q',0,self.Fluid)*1e-2;
+        _enthalpy = self.refpropm('H','T',self.setPointTemp+self.subCoolingTemp+273.15,'Q',0,self.Fluid);
         self.P = np.ones_like(self.fineLength)*_pressure
         # subcooling temperature has to be set to 0 if CO2 is in saturation
         self.T = np.ones_like(self.fineLength)*(self.setPointTemp+self.subCoolingTemp)
@@ -228,7 +228,7 @@ class CoolingBranch_v1a:
         self.fineEnvHeatFlux = np.zeros_like(self.fineLength)
         self.fineHXHeatFlux = np.zeros_like(self.fineLength)
 
-    def run(self):
+    def run(self, prt=True):
         itt=0;
         converge=10000;
         HXstart=0;
@@ -244,10 +244,11 @@ class CoolingBranch_v1a:
         while (abs(converge)>convlimit or conv_repeat<conv_repeat_limit+1) and itt<ittstop:
             foo = True
             itt+=1
-            print("\nIteration Round: {}".format(itt))
-            print("Iteration offset: {} (Stops at {})".format(converge, convlimit))
-            print("Enthalpy: {} J/kg".format(max(self.H)))
-            print("Iteration offset: {} (Stops at {})".format(conv_repeat, conv_repeat_limit))
+            if prt:
+                print("\nIteration Round: {}".format(itt))
+                print("Iteration offset: {} (Stops at {})".format(converge, convlimit))
+                print("Enthalpy: {} J/kg".format(max(self.H)))
+                print("Iteration offset: {} (Stops at {})".format(conv_repeat, conv_repeat_limit))
             Pprev = np.copy(self.P)
             Tprev = np.copy(self.T)
             HTCprev = np.copy(self.HTC)
@@ -370,14 +371,9 @@ class CoolingBranch_v1a:
         fig2, ax2 = pl.subplots(1)
 
         ax2.axis(xmin=0, xmax=1)
-        # ax2.plot(self.vaporQuality, self.fineHeatFlux, 'g-', label='Heat Flux')
-        # ax2.plot(self.vaporQuality, self.xia, label='xia')
-        #ax2.axvline(x=self.xia[0])
-        ax2.plot(self.vaporQuality, self.Gstrat, label='Gstrat')
-        ax2.plot(self.vaporQuality, self.Gbub, label='Gbub')
-        ax2.plot(self.vaporQuality, self.Gmist, label='Gmist')
         ax2.plot(self.vaporQuality, self.Gwavy, label='Gwavy')
         ax2.plot(self.vaporQuality, self.Gdry, label='Gdry')
+        ax2.plot(self.vaporQuality[1:], self.fineMassFlux, '--', label='G')
         ax2.set_xlabel('Vapor Quality')
         ax2.set_ylabel('Mass Flux (kg/m^2s)')
         ax2.legend()
@@ -405,8 +401,9 @@ class CoolingBranch_v1a:
         #P vs T (Tw)
 
 
-x = CoolingBranch_v1a('CO2', -25, 0, 0, 5*1.516e-3, {'filename': '../CoBraV1a_example.xlsx', 'sheetname': 'Example'}, "Plot", 0)
-x.start()
-x.run()
-print("Completed. Plotting...")
-x.plot()
+if __name__ == "__main__":
+    x = CoolingBranch_v1a('CO2', -25, 0, 0, 5*1.516e-3, '../CoBraV1a_example.xml')
+    x.start()
+    x.run()
+    print("Completed. Plotting...")
+    x.plot()

@@ -83,8 +83,8 @@ def dPandHTC(Fluid,P,H,MFLX,HFLX,Dh,A,Ph,Ep,Angle,SH, refpropm,prt=False):
     # print(T, P, H)
     # if abs(T) > 1e5:
     #     print(P, H)
-    if False:
-        print('debug2',State,T,P,H)
+    # if False:
+    #     print('debug2',State,T,P,H)
     #if abs(T) > 1e6:
     #    print(State)
     #    print(T, P, H)
@@ -128,10 +128,10 @@ def dPandHTC(Fluid,P,H,MFLX,HFLX,Dh,A,Ph,Ep,Angle,SH, refpropm,prt=False):
                 HTC=KandlikarCorrelation(Fluid,P,VQ,MFLX,HFLX,Dh, refpropm)
         else:
             dP,HTC,VQ,rm,State, xia, Gwavy, Gwavy_xia, Gstrat, Gbub, Gmist, Gdry= ThomeCorrelation_Con(Fluid,P,H,MFLX,HFLX,Dh,A,Ph, refpropm);
-            if(isnan(HTC)):
+            # if(isnan(HTC)):
                 # breakpoint()
-                print(Fluid,P,H,MFLX,HFLX,Dh,A,Ph)
-                print(dP,HTC,VQ,rm,State)
+                # print(Fluid,P,H,MFLX,HFLX,Dh,A,Ph)
+                # print(dP,HTC,VQ,rm,State)
 
     dPstat=1e-5*g*rm*sind(Angle)/A;
     dP=dP+dPstat;

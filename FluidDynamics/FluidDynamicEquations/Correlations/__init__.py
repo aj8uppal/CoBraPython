@@ -370,7 +370,10 @@ def F_htcAxial_8132con(G, d, A, x, e, Dl, Dv, CPl, Kl, Vl, ST):
     dfilm=F_dfilm_8135con(G,d,A,x,e,Dl,Dv,Vl,ST);
     # print(G, d, A, x, e, Dl, Dv, Vl, ST);
 
+    #numpy.float64 returns a nan when negative number is raised to fractional power, so we must explicity cast to float64
+    #https://stackoverflow.com/questions/52708265/why-do-negative-numpy-float64-yield-nan-when-expontiated-with-a-fractional-numbe
     Rel=float(F_ReL_8133con(G,x,e,Vl,dfilm));
+
     Pr=F_Prandtx( CPl,Kl,Vl) ;
     Gstrat=F_Gstrat_17con(d,A,x,e,Dl,Dv,Vl);
     fi=F_fi_8140con(G,d,A,x,e,Dl,Dv,Vl,ST);
