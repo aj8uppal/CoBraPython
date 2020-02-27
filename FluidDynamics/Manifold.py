@@ -47,6 +47,7 @@ class Manifold:
         else:
             self.present()
     def refactor(self):
+        #gradient descent
         ddP = (self.dPs[1]-self.dPs[0])/self.dPs[0]
         print("\t\tDifference in del pressure: {0:.4f}%".format(ddP*100))
         self.iterations.append(ddP)

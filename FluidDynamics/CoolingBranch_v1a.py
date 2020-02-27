@@ -230,6 +230,7 @@ class CoolingBranch_v1a:
         self.fineHXHeatFlux = np.zeros_like(self.fineLength)
 
     def run(self, prt=True):
+        format = lambda x: "'"+x[0]+"', "+",".join(map(str, x[1:]))
         itt=0;
         converge=10000;
         HXstart=0;
@@ -317,6 +318,9 @@ class CoolingBranch_v1a:
                 print(newDP, newHTC, newVQ, newRM, newState, newT)
                 # if x==316:
                 #     print('debug1',newDP,newHTC,self.fineHeatFlux[x],self.P[x],round(self.P[x], 5),self.T[x],newT)
+                # if(newDP > 100):
+                #     print(newDP)
+                #     print(format([self.Fluid, round(self.P[x], 5), self.H[x], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp]))
                 self.dP[x] = newDP
                 self.HTC[x] = newHTC
                 # print(self.dP[x])
@@ -335,14 +339,15 @@ class CoolingBranch_v1a:
                 self.Gdry[x] = float('nan') if not newGdry else newGdry.real
                 # print(self.fineHeatFlux[x], self.fineDiameter[x], self.fineLength[x+1], self.fineLength[x])
 
-                self.dH[x] = -(self.fineHeatFlux[x]*pi*self.fineDiameter[x]*(self.fineLength[x+1]-self.fineLength[x]))/self.massFlow #calculate enthalpy difference, mass not mol
+                self.dH[x] = (self.fineHeatFlux[x]*pi*self.fineDiameter[x]*(self.fineLength[x]-self.fineLength[x+1]))/self.massFlow #calculate enthalpy difference, mass not mol
+                # print(self.dH[x])
                 # if np.isnan(self.dH[x]):
                 # print(self.Fluid, round(self.P[x], 5), self.H[x], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp)
-                if newHTC == 0:
-                    print(self.Fluid, round(self.P[x+1], 5), self.H[x+1], self.fineMassFlux[x+1], self.fineHeatFlux[x+1], self.fineDiameter[x+1], 0.25*pi*self.fineDiameter[x+1]**2, pi*self.fineDiameter[x+1], self.fineRoughness[x+1], self.fineInclination[x+1], self.allowedSuperHeatTemp)
-                    # print(self.dH[x+1], self.fineEnvHeatFlux[x+1], self.fineHXHeatFlux[x+1], self.fineAppliedHeatFlux[x+1], self.T[x+1])
-                    print(self.HTC[x+1])
-                    break
+                # if newHTC == 0:
+                #     print(self.Fluid, round(self.P[x+1], 5), self.H[x+1], self.fineMassFlux[x+1], self.fineHeatFlux[x+1], self.fineDiameter[x+1], 0.25*pi*self.fineDiameter[x+1]**2, pi*self.fineDiameter[x+1], self.fineRoughness[x+1], self.fineInclination[x+1], self.allowedSuperHeatTemp)
+                #     # print(self.dH[x+1], self.fineEnvHeatFlux[x+1], self.fineHXHeatFlux[x+1], self.fineAppliedHeatFlux[x+1], self.T[x+1])
+                #     print(self.HTC[x+1])
+                #     break
                     # break
                 avgHTC = (self.HTC[x]+self.HTC[x+1])/2
                 partialResistance = self.fineTubeWallThickness[x+1]/self.fineTubeThermalConductance[x+1]+1/avgHTC
