@@ -113,6 +113,7 @@ class CoolingBranch_v1a:
         dLtm = self.tubeSectionLength/np.round(self.tubeSectionLength/self.dL)
         N = self.tubeSectionLength/dLtm
 
+
         # if sections will exchange heat, assume they have the same number of elements
         # if the section is only in thermal contact with air, HXNode == index of the section
         for i in range(len(N)):
@@ -280,7 +281,10 @@ class CoolingBranch_v1a:
                     avgHTC = (self.HTC[x]+self.HTC[x+1])/2
                     # print(self.HTC[x], self.HTC[x+1])
                     envResistance = 1/self.fineAirConductance[x] + self.fineInsulationThickness[x]/self.fineInsulationConductance[x]+self.fineTubeWallThickness[x]/self.fineTubeThermalConductance[x]+1/avgHTC
+
                     self.fineEnvHeatFlux[x] = (self.fineEnvTemperature[x]-self.T[x])/envResistance
+                    if np.isnan(envResistance):
+                        print(self.fineAirConductance[x], self.fineInsulationThickness[x], self.fineInsulationConductance[x], self.fineTubeWallThickness[x], self.fineTubeThermalConductance[x], avgHTC)
                     # print(avgHTC)
 #_______________________________________
 #                                       |
@@ -301,19 +305,21 @@ class CoolingBranch_v1a:
                     # print(self.fineHXThickness[x], self.fineHXConductance[x], hxResistance, self)
                     # break;
                 # print(self.fineEnvHeatFlux[x])
-                if np.isnan(self.fineHXHeatFlux[x]):
-                    # print(self.fineHXHeatFlux)
-                    break
+                # if np.isnan(self.fineHXHeatFlux[x]):
+                #     # print(self.fineHXHeatFlux)
+                #     break
                 self.fineHeatFlux[x] = self.fineEnvHeatFlux[x]+self.fineHXHeatFlux[x]+self.fineAppliedHeatFlux[x]
+                # print(self.fineEnvHeatFlux[x], self.fineHXHeatFlux[x], self.fineAppliedHeatFlux[x])
                 if self.Fluid == 'CO2' and self.H[x] < 9e4: #avoid enthalpy to get into freezing area for cO2.
                     self.H[x] = 9e4
 
                 newDP, newHTC, newVQ, newRM, newState, newT, newXia, newGwavy, newGwavy_xia, newGstrat, newGbub, newGmist, newGdry = dPandHTC(self.Fluid, round(self.P[x], 5), self.H[x], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp, self.refpropm,x==316);
-                # print(newDP, newHTC, newVQ, newRM, newState, newT)
+                print(newDP, newHTC, newVQ, newRM, newState, newT)
                 # if x==316:
                 #     print('debug1',newDP,newHTC,self.fineHeatFlux[x],self.P[x],round(self.P[x], 5),self.T[x],newT)
                 self.dP[x] = newDP
                 self.HTC[x] = newHTC
+                # print(self.dP[x])
                 # print("foo", self.HTC[x])
                 self.vaporQuality[x] = newVQ
                 self.relativeMass[x] = newRM
@@ -330,10 +336,14 @@ class CoolingBranch_v1a:
                 # print(self.fineHeatFlux[x], self.fineDiameter[x], self.fineLength[x+1], self.fineLength[x])
 
                 self.dH[x] = -(self.fineHeatFlux[x]*pi*self.fineDiameter[x]*(self.fineLength[x+1]-self.fineLength[x]))/self.massFlow #calculate enthalpy difference, mass not mol
-                if np.isnan(self.dH[x]):
-                    # print(self.dH[x], self.fineEnvHeatFlux[x], self.fineHXHeatFlux[x], self.fineAppliedHeatFlux[x], self.T[x])
-                    # print(self.HTC[x+1])
+                # if np.isnan(self.dH[x]):
+                # print(self.Fluid, round(self.P[x], 5), self.H[x], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp)
+                if newHTC == 0:
+                    print(self.Fluid, round(self.P[x+1], 5), self.H[x+1], self.fineMassFlux[x+1], self.fineHeatFlux[x+1], self.fineDiameter[x+1], 0.25*pi*self.fineDiameter[x+1]**2, pi*self.fineDiameter[x+1], self.fineRoughness[x+1], self.fineInclination[x+1], self.allowedSuperHeatTemp)
+                    # print(self.dH[x+1], self.fineEnvHeatFlux[x+1], self.fineHXHeatFlux[x+1], self.fineAppliedHeatFlux[x+1], self.T[x+1])
+                    print(self.HTC[x+1])
                     break
+                    # break
                 avgHTC = (self.HTC[x]+self.HTC[x+1])/2
                 partialResistance = self.fineTubeWallThickness[x+1]/self.fineTubeThermalConductance[x+1]+1/avgHTC
                 self.wallTemperature[x] = self.T[x]+self.fineHeatFlux[x]*partialResistance #wall temperature
@@ -401,9 +411,15 @@ class CoolingBranch_v1a:
         #P vs T (Tw)
 
 
-if __name__ == "__main__":
-    x = CoolingBranch_v1a('CO2', -25, 0, 0, 5*1.516e-3, '../CoBraV1a_example.xml')
+if __name__ == "__main__" or True:
+    prefix = "../"
+    filename = "CobraV1a_coupledring.xml" if len(sys.argv) <= 1 else sys.argv[1]
+    path = prefix + filename
+    MF = (0.7*16*20 + 0.7*4*9*2)/100
+    x = CoolingBranch_v1a('CO2', -40, 0, 0, MF*1e-3, path)
     x.start()
     x.run()
-    print("Completed. Plotting...")
-    x.plot()
+    print(x.P[0]-x.P[-1])
+    # print("Completed. Plotting...")
+    # print
+    # x.plot()

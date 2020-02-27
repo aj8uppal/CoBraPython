@@ -24,7 +24,7 @@ class Manifold:
         self.massFlow = MF #kg/s
         self.weights = np.full(self.N, self.massFlow/self.N)
         self.dPs = np.zeros_like(self.weights)
-        self.epsilon = 1e-6
+        self.epsilon = 1e-7
         self.alpha = 0.25
         self.div = 1000
         self.totalEnthalpy = -1
@@ -50,8 +50,9 @@ class Manifold:
         ddP = (self.dPs[1]-self.dPs[0])/self.dPs[0]
         print("\t\tDifference in del pressure: {0:.4f}%".format(ddP*100))
         self.iterations.append(ddP)
-        self.weights[0]*=(1+(ddP*self.alpha))
-        self.weights[1]/=(1+(ddP*self.alpha))
+        delta = self.weights[0]*(ddP*self.alpha)
+        self.weights[0]+=delta
+        self.weights[1]-=delta
     def present(self):
         print("\nConverged.")
         print("End enthalpy: {0:.4f}".format(self.totalEnthalpy))
@@ -59,13 +60,15 @@ class Manifold:
             print("Branch #{}".format(b+1))
             print("\tMass Flow: {}".format(self.weights[b]))
             print("\tDelta Pressure: {}".format(self.dPs[b]))
+        print("Initial Mass Flow: {0:.8f}\nEnd Sum Mass Flow: {1:.8f}".format(self.massFlow, sum(self.weights)))
     def plot(self):
-        f = interp1d(range(len(self.iterations)), self.iterations, kind='cubic')
-        pl.plot(range(len(self.iterations)), f(range(len(self.iterations))))
+        # f = interp1d(range(len(self.iterations)), self.iterations, kind='quadratic')
+        # xnew = np.linspace(0, self.iterations[-1], 500)
+        pl.plot(range(len(self.iterations)), self.iterations)
         pl.xlabel("Iteration #")
         pl.ylabel("Percent difference (dP)")
         pl.show(block=True)
 
 m = Manifold("CO2", -25, 0, 0, 5*1.516e-3)
 m.run()
-m.plot()
+# m.plot()

@@ -131,8 +131,8 @@
 	<value>10</value>
     </parameter>
     <parameter name="Heat Flow" unit="W">
-    	<value>30</value>
-    	<value>30</value>
+    	<value>300</value>
+    	<value>300</value>
     </parameter>
     <parameter name="dL" unit="m">
         <value>10e-3</value>
