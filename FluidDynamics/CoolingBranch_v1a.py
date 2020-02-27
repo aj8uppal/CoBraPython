@@ -284,8 +284,9 @@ class CoolingBranch_v1a:
                     envResistance = 1/self.fineAirConductance[x] + self.fineInsulationThickness[x]/self.fineInsulationConductance[x]+self.fineTubeWallThickness[x]/self.fineTubeThermalConductance[x]+1/avgHTC
 
                     self.fineEnvHeatFlux[x] = (self.fineEnvTemperature[x]-self.T[x])/envResistance
-                    if np.isnan(envResistance):
-                        print(self.fineAirConductance[x], self.fineInsulationThickness[x], self.fineInsulationConductance[x], self.fineTubeWallThickness[x], self.fineTubeThermalConductance[x], avgHTC)
+                    # self.fineEnvHeatFlux[x] = 0
+                    # if np.isnan(envResistance):
+                    #     print(self.fineAirConductance[x], self.fineInsulationThickness[x], self.fineInsulationConductance[x], self.fineTubeWallThickness[x], self.fineTubeThermalConductance[x], avgHTC)
                     # print(avgHTC)
 #_______________________________________
 #                                       |
@@ -315,13 +316,15 @@ class CoolingBranch_v1a:
                     self.H[x] = 9e4
 
                 newDP, newHTC, newVQ, newRM, newState, newT, newXia, newGwavy, newGwavy_xia, newGstrat, newGbub, newGmist, newGdry = dPandHTC(self.Fluid, round(self.P[x], 5), self.H[x], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp, self.refpropm,x==316);
-                print(newDP, newHTC, newVQ, newRM, newState, newT)
+                # breakpoint()
+                # print(newDP, newHTC, newVQ, newRM, newState, newT)
                 # if x==316:
                 #     print('debug1',newDP,newHTC,self.fineHeatFlux[x],self.P[x],round(self.P[x], 5),self.T[x],newT)
                 # if(newDP > 100):
                 #     print(newDP)
                 #     print(format([self.Fluid, round(self.P[x], 5), self.H[x], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp]))
                 self.dP[x] = newDP
+                # print(newDP)
                 self.HTC[x] = newHTC
                 # print(self.dP[x])
                 # print("foo", self.HTC[x])
@@ -364,6 +367,7 @@ class CoolingBranch_v1a:
                 conv_repeat+=1
             else:
                 conv_repeat = 0
+            # break
             #end while loop
     def plot(self):
         self.satTemperature = np.zeros_like(self.fineLength)

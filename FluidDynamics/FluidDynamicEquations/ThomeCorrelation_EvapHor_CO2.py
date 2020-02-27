@@ -48,7 +48,7 @@ def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
 
 
     #Intermittent to Annular Flow Transition Boundary
-    xia=F_xia_18(Dl,Dv,Vl,Vv);
+    xia=F_xia_18(Dl,Dv,Vl,Vv).real;
     # print(xia, Dv, Dl)
     eia=F_Void_8(G,xia,Dl,Dv,ST);
 
@@ -57,22 +57,22 @@ def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     # print(G, x, Dl, Dv, ST, e);
 
     #Get Transition Boundary - Stratified-Wavy to Intermittent and Annular (SW-I/A)
-    Gwavy=F_Gwavy_14(G,d,A,x,e,Dl,Dv,ST);
-    Gwavy_xia=F_Gwavy_14(G,d,A,xia,eia,Dl,Dv,ST);
+    Gwavy=F_Gwavy_14(G,d,A,x,e,Dl,Dv,ST).real;
+    Gwavy_xia=F_Gwavy_14(G,d,A,xia,eia,Dl,Dv,ST).real;
 
     #Get Transition Boundary - Stratified to Stratified-Wavy (S-SW)
-    Gstrat=F_Gstrat_17(G,d,A,x,e,Dl,Dv,Vl,Vv,ST);
+    Gstrat=F_Gstrat_17(G,d,A,x,e,Dl,Dv,Vl,Vv,ST).real;
 
 
     #Transition Boundary - Intermittent to Bubbly Flow (I-B)
-    Gbub=F_Gbub_26(d,A,x,e,Dl,Dv,Vl);
+    Gbub=F_Gbub_26(d,A,x,e,Dl,Dv,Vl).real;
 
     #Transition Boundary - Dryout to Mist Flow (D-M)
     # print(q, d, x, Dl, Dv, Hl, Hv, ST)
-    Gmist=F_Gmist_24(q,d,x,Dl,Dv,Hl,Hv,ST);
+    Gmist=F_Gmist_24(q,d,x,Dl,Dv,Hl,Hv,ST).real;
 
     #Transition Boundary - Annular to Dryout (A-D)
-    Gdry=F_Gdry_19(q,d,x,Dl,Dv,Hl,Hv,ST);
+    Gdry=F_Gdry_19(q,d,x,Dl,Dv,Hl,Hv,ST).real;
 
 
     ## flow definition

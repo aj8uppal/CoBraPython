@@ -16,6 +16,8 @@ from numpy import isnan
 
 sind = lambda x: sin(x)*180/pi
 
+format = lambda x: "'"+x[0]+"', "+",".join(map(str, x[1:]))
+
 #determine state of fluid based on various parameters
 #based on state, determine model for predicting dP and HTC
 
@@ -123,12 +125,18 @@ def dPandHTC(Fluid,P,H,MFLX,HFLX,Dh,A,Ph,Ep,Angle,SH, refpropm,prt=False):
             if Fluid == 'CO2':
                 dP,HTC,VQ,rm,State, xia, Gwavy, Gwavy_xia, Gstrat, Gbub, Gmist, Gdry =ThomeCorrelation_EvapHor_CO2(Fluid,P,H,MFLX,HFLX,Dh,A,Ph, refpropm);
 
+                # if dP > 2.8:
+                #     print(format([Fluid,P,H,MFLX,HFLX,Dh,A,Ph]))
+                #     import sys
+                #     sys.exit(0)
             else:
                 dP,rm=FriedelCorrelation(Fluid,P,VQ,MFLX,Dh,A, refpropm);
                 HTC=KandlikarCorrelation(Fluid,P,VQ,MFLX,HFLX,Dh, refpropm)
         else:
             dP,HTC,VQ,rm,State, xia, Gwavy, Gwavy_xia, Gstrat, Gbub, Gmist, Gdry= ThomeCorrelation_Con(Fluid,P,H,MFLX,HFLX,Dh,A,Ph, refpropm);
-            # if(isnan(HTC)):
+
+
+                # if(isnan(HTC)):
                 # breakpoint()
                 # print(Fluid,P,H,MFLX,HFLX,Dh,A,Ph)
                 # print(dP,HTC,VQ,rm,State)

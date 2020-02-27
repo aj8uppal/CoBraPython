@@ -5,6 +5,7 @@
       <value>3</value>
       <value>4</value>
       <value>5</value>
+      <value>6</value>
   </parameter>
   <parameter name="hydraulic diameter" unit="mm">
       <value>0.5</value>
