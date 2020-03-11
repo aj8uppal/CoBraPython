@@ -8,7 +8,7 @@
       <value>6</value>
   </parameter>
   <parameter name="hydraulic diameter" unit="mm">
-      <value>0.5</value>
+      <vary dir="up" parameter="dP" converge="8" eps="1.5">0.5</vary>
       <value>2.3</value>
       <value>2.3</value>
       <value>2.3</value>
@@ -16,7 +16,7 @@
       <value>2.3</value>
   </parameter>
   <parameter name="tube section length" unit="m">
-<value>2.8</value>
+<value>2.7</value>
 <value>0.1413716694115</value>
 <value>0.55</value>
 <value>0.628318530718</value>
@@ -134,11 +134,11 @@
     <value>25.2</value>
   </parameter>
   <parameter name="dL" unit="m">
-      <value>10e-3</value>
-      <value>10e-3</value>
-      <value>10e-3</value>
-      <value>10e-3</value>
-      <value>10e-3</value>
-      <value>10e-3</value>
+      <value>10e-2</value>
+      <value>10e-2</value>
+      <value>10e-2</value>
+      <value>10e-2</value>
+      <value>10e-2</value>
+      <value>10e-2</value>
   </parameter>
 </data>

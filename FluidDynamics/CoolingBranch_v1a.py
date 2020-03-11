@@ -20,7 +20,7 @@ warnings.filterwarnings('ignore')
 class CoolingBranch_v1a:
     refpropm = RefPropInterface().refpropm
     p=False
-    def __init__(self, Fluid, Tsp, Tsc, Tsh, MF, xml, branch=None):
+    def __init__(self, Fluid, Tsp, Tsc, Tsh, MF, xml, branch=None, varyValue=0, varyIndex=-1, eps=None, converge=None, param=None, dir=None):
         #config = {filename: , sheetname: }
         self.Fluid = Fluid
         self.setPointTemp = Tsp #C
@@ -31,6 +31,15 @@ class CoolingBranch_v1a:
 #        self.HFf = HFf #?
         self.nargin = len(signature(CoolingBranch_v1a).parameters)
         self.branch=branch
+        self.vary = varyIndex != -1
+        if self.vary:
+            self.dir = dir
+            self.varyValue = float(varyValue)
+            self.eps = float(eps)
+            self.param = param
+            self.converge = float(converge)
+            self.dir = dir
+            self.varyIndex = varyIndex
         columns = {
             "section": 0,
             "hydraulicDiameter": 1, # in mm
@@ -50,11 +59,34 @@ class CoolingBranch_v1a:
             "heatFlow": 15,
             "dL": 16
         }
+        def getCol(N):
+            parsed = []
+            for j in range(len(params[N].getElementsByTagName("*"))):
+                i = params[N].getElementsByTagName("*")[j]
+                if i.tagName == "vary":
+                    if self.vary:
+                        # if self.dir == "up":
+                        self.varyValue+=0.1
+                    else:
+                        self.varyIndex = i
+                        self.varyValue = i.firstChild.data
+                        self.eps = i.getAttribute("eps")
+                        self.param = i.getAttribute("parameter")
+                        self.dir = i.getAttribute("dir")
+                        self.converge = i.getAttribute("converge")
+                        self.vary = True
+
+                    parsed.append(self.varyValue)
+                    print("{}: {}".format(list(columns.keys())[j+1], self.varyValue))
+                    # breakpoint()
+                else:
+                    parsed.append(i.firstChild.data)
+            return np.array(list(map(float, parsed)))
         data = minidom.parse(xml)
         # breakpoint()
         params = data.getElementsByTagName("parameter") if not branch else data.getElementsByTagName("branch")[int(branch)].getElementsByTagName("parameter")
         # df = pd.read_excel(config['filename'], sheet_name=config['sheetname'])
-        getCol = lambda N: np.array(list(map(float, ["nan" if len(i.toxml()) == 8 else i.firstChild.data for i in params[N].getElementsByTagName("value")])))
+        # getCol = lambda N: np.array(list(map(float, ["nan" if len(i.toxml()) == 8 else i.firstChild.data for i in params[N].getElementsByTagName("value")])))
         self.diameters=getCol(columns["hydraulicDiameter"])/1e3 # extract hydraulic diameter
         self.crossSectionArea=np.pi*self.diameters*self.diameters/4.
         self.tubeSectionLength=getCol(columns["tubeSectionLength"]) #extract lengths
@@ -426,9 +458,29 @@ if __name__ == "__main__" or True:
     path = prefix + filename
     MF = (0.7*16*20 + 0.7*4*9*2)/100
     x = CoolingBranch_v1a('CO2', -40, 0, 0, MF*1e-3, path)
-    x.start()
-    x.run()
-    print(x.P[0]-x.P[-1])
+    if x.vary:
+        x.start()
+        x.run(prt=False)
+        cur = x.P[0]-x.P[-1]
+        print("\tDelta Pressure: {}".format(cur))
+        while cur > float(x.converge):
+            # prevEps = x.eps
+            # prevConverge = x.converge
+            # prevParam = x.param
+            # prevDir = x.dir
+            x = CoolingBranch_v1a('CO2', -40, 0, 0, MF*1e-3, path, varyValue=x.varyValue, varyIndex=x.varyIndex, eps=x.eps, converge=x.converge, param=x.param, dir=x.dir)
+            # x.eps = prevEps
+            # x.converge = prevConverge
+            # x.param = prevParam
+            # x.dir = prevDir
+            x.start()
+            x.run(prt=False)
+            cur = x.P[0]-x.P[-1]
+            print("\tDelta Pressure: {}".format(cur))
+    else:
+        x.start()
+        x.run()
+    # print(x.P[0]-x.P[-1])
     # print("Completed. Plotting...")
     # print
     # x.plot()
