@@ -1,5 +1,6 @@
 <data>
     <parameter name="section">
+        <value>0</value>
         <value>1</value>
         <value>2</value>
         <value>3</value>
@@ -11,7 +12,6 @@
         <value>9</value>
         <value>10</value>
         <value>11</value>
-        <value>12</value>
     </parameter>
     <parameter name="hydraulic diameter" unit="mm">
         <value>1</value>
@@ -224,17 +224,17 @@
     	<value>0</value>
     </parameter>
     <parameter name="dL" unit="m">
-        <value>10e-3</value>
-        <value>10e-3</value>
-        <value>10e-3</value>
-        <value>10e-3</value>
-        <value>10e-3</value>
-        <value>10e-3</value>
-        <value>10e-3</value>
-        <value>10e-3</value>
-        <value>10e-3</value>
-        <value>10e-3</value>
-        <value>10e-3</value>
-        <value>10e-3</value>
+        <value>1e-3</value>
+        <value>1e-3</value>
+        <value>1e-3</value>
+        <value>1e-3</value>
+        <value>1e-3</value>
+        <value>1e-3</value>
+        <value>1e-3</value>
+        <value>1e-3</value>
+        <value>1e-3</value>
+        <value>1e-3</value>
+        <value>1e-3</value>
+        <value>1e-3</value>
     </parameter>
 </data>

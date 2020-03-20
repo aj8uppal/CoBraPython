@@ -95,12 +95,12 @@ class CoolingBranch_v1a:
         self.HXNode=np.array(list(map(int, getCol(columns["HXNode"])))) #extract heat exchange nodes
         self.HXFlowDir=getCol(columns["HXFlowDir"]) #extract heat exchanger flow direction
         self.HXConductance=getCol(columns["HXConductance"]) #extract heat exchanger conductance
-        self.HXThickness=getCol(columns["HXThickness"]) #extract heat exchanger conductance
+        self.HXThickness=getCol(columns["HXThickness"])/1e3 #extract heat exchanger conductance
         self.ISOConductance=getCol(columns["insulationConductance"]) #extract insulation conductance
         # print(self.ISOConductance)
         self.envTemperature=getCol(columns["envTemperature"]) #extract Tenv
-        self.tubeWallThickness=getCol(columns["tubeWallThickness"])
-        self.ISOThickness = getCol(columns["insulationThickness"])
+        self.tubeWallThickness=getCol(columns["tubeWallThickness"])/1e3
+        self.ISOThickness = getCol(columns["insulationThickness"])/1e3
         self.tubeThermalConductance = getCol(columns["tubeThermalConductance"])
         self.HTCAir = getCol(columns["HTCAir"])
         self.heatFlow=getCol(columns["heatFlow"])
@@ -160,7 +160,9 @@ class CoolingBranch_v1a:
         self.SP = self.SP.astype(int)
         #self.SP+=1
         for i,n in enumerate(N):
-            n = int(n)
+            # print(n)
+            # print(n, round(n), int(n))
+            n = int(round(n))
             self.fineLength = np.append(self.fineLength,
                 np.linspace(self.fineLength[-1], self.fineLength[-1]+self.tubeSectionLength[i], n))
             self.fineDiameter = np.append(self.fineDiameter,[self.diameters[i]]*n)
@@ -232,7 +234,14 @@ class CoolingBranch_v1a:
         for i in range(len(self.SP)-1):
             if self.fineHXFlowDir[self.SP[i]] == 0:
                 # for j in range(self.SP[i], self.SP[i+1]):
+                # print(self.SP)
+                # print(self.SP[i], self.SP[i+1])
                 self.fineHXNode_fCopy[self.SP[i]:self.SP[i+1]] = range(self.SP[i], self.SP[i+1])
+                # try:
+                #     self.fineHXNode_fCopy[self.SP[i]:self.SP[i+1]] = range(self.SP[i], self.SP[i+1])
+                # except:
+                #     breakpoint()
+                # print(len(self.fineHXNode_fCopy[self.SP[i]:self.SP[i+1]]), len(range(self.SP[i], self.SP[i+1])))
             elif self.fineHXFlowDir[self.SP[i]] == -1:
                 self.fineHXNode_fCopy[self.SP[i]:self.SP[i+1]] = range(self.SP[self.fineHXNode[self.SP[i]]+1]-1, self.SP[self.fineHXNode[self.SP[i]]]-1, -1)
             else:
@@ -376,8 +385,10 @@ class CoolingBranch_v1a:
 
                 self.dH[x] = (self.fineHeatFlux[x]*pi*self.fineDiameter[x]*(self.fineLength[x]-self.fineLength[x+1]))/self.massFlow #calculate enthalpy difference, mass not mol
                 # print(self.dH[x])
-                # if np.isnan(self.dH[x]):
-                # print(self.Fluid, round(self.P[x], 5), self.H[x], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp)
+                if np.isnan(self.dH[x]):
+                    print("ERR")
+                    # print(self.Fluid, round(self.P[x], 5), self.H[x], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp)
+                    break
                 # if newHTC == 0:
                 #     print(self.Fluid, round(self.P[x+1], 5), self.H[x+1], self.fineMassFlux[x+1], self.fineHeatFlux[x+1], self.fineDiameter[x+1], 0.25*pi*self.fineDiameter[x+1]**2, pi*self.fineDiameter[x+1], self.fineRoughness[x+1], self.fineInclination[x+1], self.allowedSuperHeatTemp)
                 #     # print(self.dH[x+1], self.fineEnvHeatFlux[x+1], self.fineHXHeatFlux[x+1], self.fineAppliedHeatFlux[x+1], self.T[x+1])
@@ -452,7 +463,7 @@ class CoolingBranch_v1a:
         #P vs T (Tw)
 
 
-if __name__ == "__main__" or True:
+if __name__ == "__main__":
     prefix = "../"
     filename = "CobraV1a_coupledring.xml" if len(sys.argv) <= 1 else sys.argv[1]
     path = prefix + filename

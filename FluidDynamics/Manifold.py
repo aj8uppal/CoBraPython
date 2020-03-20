@@ -13,10 +13,9 @@ from scipy.interpolate import interp1d
 
 #user passes in setpointtemp, subcoolingtemp, subheattemp
 
-
 class Manifold:
     def __init__(self, Fluid, Tsp, Tsc, Tsh, MF):
-        self.N = 2
+        self.N = 3
         self.Fluid = Fluid
         self.setPointTemp = Tsp #C
         self.subCoolingTemp = Tsc #C
@@ -24,16 +23,17 @@ class Manifold:
         self.massFlow = MF #kg/s
         self.weights = np.full(self.N, self.massFlow/self.N)
         self.dPs = np.zeros_like(self.weights)
-        self.epsilon = 1e-7
-        self.alpha = 0.25
-        self.div = 1000
+        self.epsilon = 1e-3
+        self.gamma = 0.00025
         self.totalEnthalpy = -1
         self.iterations = []
     def run(self):
-        assert(self.alpha < 0.5)
+        assert(self.gamma < 0.5)
         self.correction = self.massFlow*1e-1
         self.counts = 0
-        while self.dPs[0] == 0 or abs(max([t - s for s, t in zip(self.dPs, self.dPs[1:])])) > self.epsilon:
+        # while self.dPs[0] == 0 or abs(max([t - s for s, t in zip(self.dPs, self.dPs[1:])])) > self.epsilon:
+            # print(self.epsilon, abs(max([t - s for s, t in zip(self.dPs, self.dPs[1:])])))
+        while self.dPs[0] == 0 or self.dPs.std() > self.epsilon:
             self.totalEnthalpy = 0
             for x in range(self.N):
                 branch = CoolingBranch_v1a(self.Fluid, self.setPointTemp, self.subCoolingTemp, self.allowedSuperHeatTemp, self.weights[x], "../Manifold.xml", branch=str(x))
@@ -48,12 +48,34 @@ class Manifold:
             self.present()
     def refactor(self):
         #gradient descent
-        ddP = (self.dPs[1]-self.dPs[0])/self.dPs[0]
-        print("\t\tDifference in del pressure: {0:.4f}%".format(ddP*100))
-        self.iterations.append(ddP)
-        delta = self.weights[0]*(ddP*self.alpha)
-        self.weights[0]+=delta
-        self.weights[1]-=delta
+        # print(self.weights/self.dPs)
+        avgDP = self.dPs.mean()
+        std = self.dPs.std()
+        print("\t\tStandard Deviation of del pressures: {0:.4f}".format(std))
+        self.diffs = self.dPs-np.full(self.N, avgDP)
+        self.weights-=self.gamma*self.diffs
+        # print(self.massFlow, sum(self.weights))
+        # breakpoint()
+        # self.newweights = list(self.weights)
+        # for x in range(self.N-1):
+        #     # self.iterations.append([])
+        #     ddP = (self.dPs[x+1]-self.dPs[x])/self.dPs[x]
+        #     print("\t\tDifference in del pressure between branches {0} and {1}: {2:.4f}%".format(x, x+1, ddP*100))
+        #     self.iterations[-1].append(ddP)
+        #     # breakpoint()
+        #     # ddP/=45
+        #     # ddP = sin(max(-pi/2, min(pi/2, ddP)))*0.99
+        #     delta = self.weights[x]*ddP*self.gamma
+        #     # delta = self.weights[x]*ddP
+        #     self.newweights[x]+=delta
+        #     self.newweights[x+1]-=delta
+        # self.weights = self.newweights
+        # ddP = (self.dPs[1]-self.dPs[0])/self.dPs[0]
+        # print("\t\tDifference in del pressure: {0:.4f}%".format(ddP*100))
+        # self.iterations.append(ddP)
+        # delta = self.weights[0]*(ddP*self.alpha)
+        # self.weights[0]+=delta
+        # self.weights[1]-=delta
     def present(self):
         print("\nConverged.")
         print("End enthalpy: {0:.4f}".format(self.totalEnthalpy))
@@ -65,7 +87,7 @@ class Manifold:
     def plot(self):
         # f = interp1d(range(len(self.iterations)), self.iterations, kind='quadratic')
         # xnew = np.linspace(0, self.iterations[-1], 500)
-        pl.plot(range(len(self.iterations)), self.iterations)
+        pl.plot(range(len(self.iterations)), [i[0] for i in self.iterations])
         pl.xlabel("Iteration #")
         pl.ylabel("Percent difference (dP)")
         pl.show(block=True)

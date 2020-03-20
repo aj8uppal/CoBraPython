@@ -139,4 +139,74 @@
         <value>10e-3</value>
     </parameter>
   </branch>
+  <branch index="2">
+    <parameter name="section">
+        <value>1</value>
+        <value>2</value>
+    </parameter>
+    <parameter name="hydraulic diameter" unit="mm">
+        <value>1</value>
+        <value>3</value>
+    </parameter>
+    <parameter name="tube section length" unit="m">
+	<value>1.5</value>
+  <value>0.5</value>
+    </parameter>
+    <parameter name="tube orientation angle" unit="deg">
+	<value>0</value>
+	<value>0</value>
+    </parameter>
+    <parameter name="tube roughness" unit="µm">
+	<value>0</value>
+	<value>0</value>
+    </parameter>
+    <parameter name="HX with Node #" unit="dimensionless">
+    	<value>0</value>
+    	<value>1</value>
+    </parameter>
+    <parameter name="HX Flow direction (co-current=1, counter-current=-1" unit="dimensionless">
+      <value>0</value>
+      <value>0</value>
+    </parameter>
+    <parameter name="HX conductance" unit="W/mK">
+        <value>0</value>
+        <value>0</value>
+    </parameter>
+    <parameter name="HX thickness" unit="mm">
+        <value>0</value>
+        <value>0</value>
+    </parameter>
+    <parameter name="Insulation conductance" unit="W/mK">
+	<value>3.14E-02</value>
+	<value>3.14E-02</value>
+    </parameter>
+    <parameter name="Environmental temperature" unit="C">
+	<value>-10</value>
+  <value>-10</value>
+    </parameter>
+    <parameter name="Tube wall thickness" unit="mm">
+	<value>0.5</value>
+	<value>0.15</value>
+    </parameter>
+    <parameter name="Insulation thickness" unit="mm">
+	<value>0</value>
+	<value>0</value>
+    </parameter>
+    <parameter name="Tube thermal conductance" unit="W/mK">
+	<value>16.4</value>
+	<value>16.4</value>
+    </parameter>
+    <parameter name="HTC air" unit="w/m^2K">
+	<value>10</value>
+	<value>10</value>
+    </parameter>
+    <parameter name="Heat Flow" unit="W">
+    	<value>10</value>
+    	<value>10</value>
+    </parameter>
+    <parameter name="dL" unit="m">
+        <value>10e-3</value>
+        <value>10e-3</value>
+    </parameter>
+  </branch>
 </manifold>
