@@ -54,28 +54,6 @@ class Manifold:
         print("\t\tStandard Deviation of del pressures: {0:.4f}".format(std))
         self.diffs = self.dPs-np.full(self.N, avgDP)
         self.weights-=self.gamma*self.diffs
-        # print(self.massFlow, sum(self.weights))
-        # breakpoint()
-        # self.newweights = list(self.weights)
-        # for x in range(self.N-1):
-        #     # self.iterations.append([])
-        #     ddP = (self.dPs[x+1]-self.dPs[x])/self.dPs[x]
-        #     print("\t\tDifference in del pressure between branches {0} and {1}: {2:.4f}%".format(x, x+1, ddP*100))
-        #     self.iterations[-1].append(ddP)
-        #     # breakpoint()
-        #     # ddP/=45
-        #     # ddP = sin(max(-pi/2, min(pi/2, ddP)))*0.99
-        #     delta = self.weights[x]*ddP*self.gamma
-        #     # delta = self.weights[x]*ddP
-        #     self.newweights[x]+=delta
-        #     self.newweights[x+1]-=delta
-        # self.weights = self.newweights
-        # ddP = (self.dPs[1]-self.dPs[0])/self.dPs[0]
-        # print("\t\tDifference in del pressure: {0:.4f}%".format(ddP*100))
-        # self.iterations.append(ddP)
-        # delta = self.weights[0]*(ddP*self.alpha)
-        # self.weights[0]+=delta
-        # self.weights[1]-=delta
     def present(self):
         print("\nConverged.")
         print("End enthalpy: {0:.4f}".format(self.totalEnthalpy))
