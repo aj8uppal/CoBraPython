@@ -204,8 +204,8 @@ class CoolingBranch_v1a:
         self.H = np.ones_like(self.fineLength)*_enthalpy
 
         # This is the set point information, which is fixed
-        _setPointPressure = self.refpropm('P','T',self.setPointTemp+273.15,'Q',1.0,self.Fluid)*1e-2
-        _setPointEnthalpy = self.refpropm('H','T',self.setPointTemp+273.15,'Q',1.0,self.Fluid)
+        _setPointPressure = self.refpropm('P','T',self.setPointTemp+273.15,'Q',0.5,self.Fluid)*1e-2
+        _setPointEnthalpy = self.refpropm('H','T',self.setPointTemp+273.15,'Q',0.5,self.Fluid)
         self.T[-1]=self.setPointTemp
         self.P[-1]=_setPointPressure
         self.H[-1]=_setPointEnthalpy
@@ -251,13 +251,14 @@ class CoolingBranch_v1a:
                     print('The code stepped away from its hypotheses')
                     print('-----------------------------------------')
                     print('Step ', x)
+                    print('Length ', self.fineLength[x])
                     print('Vapor quality [old, new] ', self.vaporQuality[x+1], newVQ)
                     print('State [old, new] ', self.State[x+1], newState)
-                    print('HTC [old, new] ', self.HTC[x+1], newHTC)
-                    print('Temperature', self.T[x+1])
+                    print('HTC [old, new] ', self.HTC[x+1], self.HTC[x+2], newHTC)
+                    print('Temperature', self.T[x+1], self.T[x+2])
                     print('Pressure', self.P[x+1])
                     print('Enthalpy', self.H[x+1])
-                    print('Envorimental Heat Flux', self.fineEnvHeatFlux[x])
+                    print('Envorimental Heat Flux', self.fineEnvHeatFlux[x], self.fineEnvHeatFlux[x+1])
                     print('Heat Exchange Heat Flux', self.fineHXHeatFlux[x])
                     print('Applied Heat Flux', self.fineAppliedHeatFlux[x])
                     print('-----------------------------------------')
@@ -346,7 +347,7 @@ if __name__ == "__main__":
     prefix = "../"
     filename = "CobraV1a_coupledring.xml" if len(sys.argv) <= 1 else sys.argv[1]
     path = prefix + filename
-    MF = (0.7*16*20 + 0.7*4*9*2)/100
+    MF = 6
     x = CoolingBranch_v1a('CO2', -40, 0.01, 0, MF*1e-3, path)
     if x.vary:
         x.start()
