@@ -580,10 +580,16 @@ def F_HTCslug_sw( p,G,q,d,A,x,e,CPl,CPv,Dl,Dv,Kl,Kv,Vl,Vv,ST):
     return htp
 
 def F_HTCmist_14( G,d,x,CPv,Dl,Dv,Kv,Vv ):
+    if x>1:
+        x=1
+    elif x<0:
+        x=0
     Reh=(G*d/Vv)*(x+(Dv/Dl)*(1-x));   #equation 15
     Y=1-0.1*(((Dl/Dv)-1)*(1-x))**0.4;  #equation 16
     PRv=F_Prandtl( CPv,Kv,Vv);
     HTCmist=2e-8*Reh**1.97*PRv**(1.06)*Y**(-1.83)*Kv/d;
+#    if isnan(HTCmist):
+#        print("RCLSA3", Reh,PRv,Y,Kv,d)
     return HTCmist
 
 def F_HTCdry_17( p,G,q,d,A,x,CPl,CPv,Dl,Dv,Hl,Hv,Kl,Kv,Vl,Vv,ST):
@@ -599,6 +605,8 @@ def F_HTCdry_17( p,G,q,d,A,x,CPl,CPv,Dl,Dv,Hl,Hv,Kl,Kv,Vl,Vv,ST):
 
     HTCxdi=F_HTCtp_1( p,G,q,d,A,xdi,edi,CPl,CPv,Dl,Dv,Kl,Kv,Vl,Vv,ST,DryAngle);
     HTCdry=HTCxdi-((x-xdi)/(xde-xdi))*(HTCxdi-HTCxde);
+#    if isnan(HTCdry):
+#        print("RCLSA2", HTCxdi,x,xdi,xde,HTCxde)
     return HTCdry
 
 

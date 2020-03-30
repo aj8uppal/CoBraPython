@@ -44,7 +44,7 @@ class RefPropInterface:
         self.RP = RP
     def changeUnits(self, inputUnit, factor=False):
         outputUnit = inputUnit
-        #CritP --> 
+        #CritP -->
         if inputUnit == 'V':
             outputUnit = 'VIS'
             factor = factor if not factor else 1e-6
@@ -67,7 +67,13 @@ class RefPropInterface:
         iValue1 = iValue1*1e-3 if iName1 == 'H' else iValue1
         iValue2 = iValue2*1e-3 if iName2 == 'H' else iValue2
         if output == 'Q':
-            return self.RP.REFPROPdll(fluid, iName1+iName2, 'QMASS', 7, 0, 0, iValue1, iValue2, [1.0]).q
+            retval = self.RP.REFPROPdll(fluid, iName1+iName2, 'QMASS', 7, 0, 0, iValue1, iValue2, [1.0]).q
+            if retval < 1e-4:
+                return 1e-4
+            elif retval > (1-1e-4):
+                return (1-1e-4)
+            else:
+                return retval
         return factor*self.RP.REFPROPdll(fluid, iName1+iName2, output, unit or self.UNIT, 0, 0, iValue1, iValue2, [1.0]).Output[0]
     def closeTo(self, a1, a2, epsilon=0.01):
         return (abs(a1-a2) < abs((a1+a2)/2)*epsilon)

@@ -18,7 +18,7 @@ def ThomeCorrelation_EvapHor(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     g=9.81;
 
     #Inlet Vapor Quality
-    x=refpropm('Q','P',round(p*1e2),'H',round(H),fluid);
+    x=refpropm('Q','P',p*1e2,'H',H,fluid);
 
     #Enthalpy [J/kg]
 

@@ -2,6 +2,7 @@ from Correlations import *
 # import sys
 # sys.path.append('../../REFPROP')
 # from refprop import RefPropInterface
+#import numpy as np
 
 def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     # function[dP,HTC,x,rm,flowpattern] = ThomeCorrelation_EvapHor_CO2(Fluid,P [bar],H [J/kg],MFLX [kg/m2s], HFLX [ W/m2K], Dh [m], CS-area [m2], periphery [m])
@@ -15,7 +16,7 @@ def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     # RPI = RefPropInterface()
     # refpropm = RPI.refpropm
     #Inlet Vapor Quality
-    x=abs(refpropm('Q','P',round(p*1e2, 2),'H',round(H, 2),fluid));
+    x=refpropm('Q','P',p*1e2,'H',H,fluid);
     # print("p, H, x: {}, {}, {}".format(round(p*1e2, 3), round(H, 3), x))
     #Enthalpy [J/kg]
 
@@ -146,6 +147,8 @@ def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     elif flowpattern == 'Dry':
         DPf=F_DPdry_51(G,q,d,A,x,Dl,Dv,Hl,Hv,Vl,Vv,ST);
         htp=F_HTCdry_17( p,G,q,d,A,x,CPl,CPv,Dl,Dv,Hl,Hv,Kl,Kv,Vl,Vv,ST);
+#        if np.isnan(htp):
+#            print("RCLSA1", p,G,q,d,A,x,CPl,CPv,Dl,Dv,Hl,Hv,Kl,Kv,Vl,Vv,ST)
     elif flowpattern == 'Mist':
         DPf=F_DPmist_45(G,d,x,Dl,Dv,Vl,Vv);
         htp=F_HTCmist_14( G,d,x,CPv,Dl,Dv,Kv,Vv );

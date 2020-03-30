@@ -14,7 +14,7 @@ def ThomeCorrelation_Con(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     q=abs(HFLX) #w/m2K
     #Commented until refprop is fixed, arbitrary value for now
     # Inlet Vapor Quality
-    x=abs(refpropm('Q','P',round(p, 2),'H',round(H, 2),fluid));
+    x=abs(refpropm('Q','P',p*100,'H',H,fluid));
 
     #Enthalpy [J/kg]
 

@@ -8,8 +8,7 @@
       <value>6</value>
   </parameter>
   <parameter name="hydraulic diameter" unit="mm">
-      <!-- <vary dir="up" parameter="dP" converge="8" eps="1.5">0.5</vary> -->
-      <value>0.5</value>
+      <value>0.8</value>
       <value>2.3</value>
       <value>2.3</value>
       <value>2.3</value>
@@ -17,12 +16,12 @@
       <value>2.3</value>
   </parameter>
   <parameter name="tube section length" unit="m">
-<value>2.7</value>
-<value>0.1413716694115</value>
-<value>0.55</value>
-<value>0.628318530718</value>
-<value>0.55</value>
-<value>0.1413716694115</value>
+<value>2.750</value>
+<value>0.141</value>
+<value>0.550</value>
+<value>0.628</value>
+<value>0.550</value>
+<value>0.141</value>
   </parameter>
   <parameter name="tube orientation angle" unit="deg">
 <value>0</value>
@@ -97,7 +96,7 @@
 <value>0.15</value>
   </parameter>
   <parameter name="Insulation thickness" unit="mm">
-<value>0</value>
+<value>1000</value>
 <value>0</value>
 <value>0</value>
 <value>0</value>
