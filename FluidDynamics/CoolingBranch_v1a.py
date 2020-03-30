@@ -276,9 +276,6 @@ class CoolingBranch_v1a:
                     print("ERR")
                     break
 
-                #avgHTC = (self.HTC[x]+self.HTC[x+1])/2
-                #if (self.fineHeatFlux[x] < 0):
-                #    print(x,self.fineEnvTemperature[x],self.T[x+1],envResistance,self.fineHeatFlux[x],self.fineEnvHeatFlux[x],self.fineHXHeatFlux[x],self.fineAppliedHeatFlux[x])
                 partialResistance = self.fineTubeWallThickness[x]/self.fineTubeThermalConductance[x]+1/self.HTC[x+1] #RCLSA
                 self.wallTemperature[x+1] = self.T[x+1]+self.fineHeatFlux[x]*partialResistance #wall temperature
                 self.H[x] = self.H[x+1]-dH #calculate new enthalpy #RCLSA
@@ -286,17 +283,11 @@ class CoolingBranch_v1a:
                 self.vaporQuality[x] = self.refpropm('Q','P',self.P[x]*1e2,'H',self.H[x],self.Fluid);
                 self.T[x] = self.refpropm('T','P',self.P[x]*1e2,'H',self.H[x],self.Fluid)-273.15;
 
-            # That is actually an estimate of H
-            # but chances are we did not start at the right point to reach
-            # the initialVaporQuality
-            # But we have an estimate of the total H[0]
-            # and we know what is the H that we want
-            #print(self.H, self.T, self.HTC, self.vaporQuality)
+           
             total_dH = self.H[0] - self.refpropm('H','T',self.setPointTemp+273.15,'Q',self.initialVaporQuality,self.Fluid);
             for i in range(len(self.H)):
                 self.H[i] = self.H[i]-total_dH
                 self.vaporQuality[i] = self.refpropm('Q','P',self.P[i]*1e2,'H',self.H[i],self.Fluid);
-            #print(self.H, self.T, self.HTC, self.vaporQuality)
 
             self.Hconv = np.array(self.H)-np.array(Hprev)
             converge_prev = converge
@@ -305,16 +296,13 @@ class CoolingBranch_v1a:
                 conv_repeat+=1
             else:
                 conv_repeat = 0
-            # break
-            #end while loop
+
     def plot(self):
         self.satTemperature = np.zeros_like(self.fineLength)
         for i in range(len(self.fineLength)):
             self.satTemperature[i] = self.refpropm('T','P',self.P[i]*1e2,'Q',self.vaporQuality[i], self.Fluid)-273.15
 
-        #Intermittent to Annular Flow Transition Boundary
         fig, ax1 = pl.subplots(1)
-        # fig, ax1 = pl.subplots()
         yax2 = ax1.twinx()
         ax1.plot(self.fineLength[1:], self.T[1:], 'g-', label='Temperature (Fluid)')
         ax1.plot(self.fineLength[1:], self.wallTemperature[1:], 'b-', label='Wall Temperature')
@@ -325,15 +313,19 @@ class CoolingBranch_v1a:
         ax1.set_xlabel('Length (m)')
         ax1.set_ylabel('Temperature (C)', color='g')
         yax2.set_ylabel('Pressure (bar)', color='b')
+        
         fig2, ax2 = pl.subplots(1)
-
-        ax2.axis(xmin=0, xmax=self.vaporQuality[1:].max()*1.1, ymin=0, ymax=self.fineMassFlux.max()*2.0)
+        ax2.axis(xmin=0, xmax=self.vaporQuality[1:].max()*1.1, ymin=0, ymax=self.fineMassFlux.max()*1.1)
         ax2.plot(self.vaporQuality[1:], self.Gwavy[1:], label='Gwavy')
+        ax2.fill_between(self.vaporQuality[1:], 0, self.Gwavy[1:], facecolor='blue', alpha=0.3)
         ax2.plot(self.vaporQuality[1:], self.Gdry[1:], label='Gdry')
+        ax2.fill_between(self.vaporQuality[1:], self.Gdry[1:], self.fineMassFlux.max()*2, facecolor='orange', alpha=0.3)
         ax2.plot(self.vaporQuality[1:], self.fineMassFlux, '--', label='G')
         ax2.set_xlabel('Vapor Quality')
         ax2.set_ylabel('Mass Flux (kg/m^2s)')
         ax2.legend()
+
+
         #for i in range(len(self.fineMassFlux)):
         #    print(self.vaporQuality[1:][i],self.fineMassFlux[i],self.fineLength[i],self.fineAppliedHeatFlux[i],self.fineEnvHeatFlux[i])
         # ax2.plot(self.fineLength, self.vaporQuality, 'r-')
