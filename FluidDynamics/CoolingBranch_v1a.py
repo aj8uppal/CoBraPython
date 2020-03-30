@@ -22,6 +22,7 @@ class CoolingBranch_v1a:
     refpropm = RefPropInterface().refpropm
     p=False
     def __init__(self, Fluid, Tsp, vq0, Tsh, MF, xml, branch=None, varyValue=0, varyIndex=-1, eps=None, converge=None, param=None, dir=None):
+        self.Name = (xml.split('/')[-1])[:-4]
         self.Fluid = Fluid
         self.setPointTemp = Tsp #C
         self.initialVaporQuality = vq0 # vapor quality?
@@ -214,7 +215,6 @@ class CoolingBranch_v1a:
         format = lambda x: "'"+x[0]+"', "+",".join(map(str, x[1:]))
         itt=0;
         converge=10000;
-        HXstart=0;
         convlimit=40;
         conv_repeat=0;
         conv_repeat_limit=3;
@@ -229,14 +229,9 @@ class CoolingBranch_v1a:
                 print("Iteration offset: {} (Stops at {})".format(converge, convlimit))
                 print("Enthalpy: {} J/kg".format(max(self.H)))
                 print("Iteration offset: {} (Stops at {})".format(conv_repeat, conv_repeat_limit))
-            Pprev = np.copy(self.P)
-            Tprev = np.copy(self.T)
-            HTCprev = np.copy(self.HTC)
             Hprev = np.copy(self.H)
-            if converge < 1000:
-                HXstart = 1
 
-            for x in range(len(self.fineLength)-2,-1,-1): #2:length(Lf)
+            for x in range(len(self.fineLength)-2,-1,-1):
                 if self.fineHXNode[x] == x:
                     avgHTC = (self.HTC[x]+self.HTC[x+1])/2
                     envResistance = 1/self.fineAirConductance[x] + self.fineInsulationThickness[x]/self.fineInsulationConductance[x]+self.fineTubeWallThickness[x]/self.fineTubeThermalConductance[x]+1/avgHTC
@@ -248,37 +243,44 @@ class CoolingBranch_v1a:
                     hxResistance = 1/avgHTC+self.fineHXThickness[x]/self.fineHXConductance[x]+1/avgNodeHTC
                     self.fineHXHeatFlux[x] = (self.T[nodeIndex]-self.T[x+1])/hxResistance
                 self.fineHeatFlux[x] = self.fineEnvHeatFlux[x]+self.fineHXHeatFlux[x]+self.fineAppliedHeatFlux[x]
-                newDP, newHTC, newVQ, newRM, newState, newT, newXia, newGwavy, newGwavy_xia, newGstrat, newGbub, newGmist, newGdry = dPandHTC(self.Fluid, self.P[x+1], self.H[x+1], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp, self.refpropm);
-                if np.isnan(newHTC):
-                    print(x,newDP,newHTC,newVQ,newState,newT,self.P[x+1],self.H[x+1],self.fineMassFlux[x],self.fineHeatFlux[x])
+                newDP, newHTC, newVQ, newRM, newState, newT, newXia, newGwavy, newGwavy_xia, newGstrat, newGbub, newGmist, newGdry = dPandHTC(self.Fluid, self.P[x+1], self.H[x+1], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp, self.refpropm);                
+                try:
+                    if np.isnan(newHTC): 
+                        raise ValueError("Oops, I will leave")
+                except ValueError:
+                    print('The code stepped away from its hypotheses')
+                    print('-----------------------------------------')
+                    print('Step ', x)
+                    print('Vapor quality [old, new] ', self.vaporQuality[x+1], newVQ)
+                    print('State [old, new] ', self.State[x+1], newState)
+                    print('HTC [old, new] ', self.HTC[x+1], newHTC)
+                    print('Temperature', self.T[x+1])
+                    print('Pressure', self.P[x+1])
+                    print('Enthalpy', self.H[x+1])
+                    print('Envorimental Heat Flux', self.fineEnvHeatFlux[x])
+                    print('Heat Exchange Heat Flux', self.fineHXHeatFlux[x])
+                    print('Applied Heat Flux', self.fineAppliedHeatFlux[x])
+                    print('-----------------------------------------')
+                    print('I will leave now. Bye!')
+                    sys.exit(1)
                 self.HTC[x+1] = newHTC
                 self.vaporQuality[x+1] = newVQ
                 self.relativeMass[x+1] = newRM
                 self.State[x+1] = newState
                 self.T[x+1] = newT
-                self.xia[x+1] = float('nan') if not newXia else newXia.real
+                #self.xia[x+1] = float('nan') if not newXia else newXia.real
+                #self.Gwavy_xia[x+1] = float('nan') if not newGwavy_xia else newGwavy_xia.real
+                #self.Gstrat[x+1] = float('nan') if not newGstrat else newGstrat.real
+                #self.Gbub[x+1] = float('nan') if not newGbub else newGbub.real
+                #self.Gmist[x+1] = float('nan') if not newGmist else newGmist.real
                 self.Gwavy[x+1] = float('nan') if not newGwavy else newGwavy.real
-                self.Gwavy_xia[x+1] = float('nan') if not newGwavy_xia else newGwavy_xia.real
-                self.Gstrat[x+1] = float('nan') if not newGstrat else newGstrat.real
-                self.Gbub[x+1] = float('nan') if not newGbub else newGbub.real
-                self.Gmist[x+1] = float('nan') if not newGmist else newGmist.real
                 self.Gdry[x+1] = float('nan') if not newGdry else newGdry.real
 
 
-                dH = (self.fineHeatFlux[x]*pi*self.fineDiameter[x]*(self.fineLength[x+1]-self.fineLength[x]))/self.massFlow #calculate enthalpy difference, mass not mol #RCLSA
-
-                if np.isnan(dH):
-                    print(newHTC, self.HTC[x],self.HTC[x+1],x,len(self.fineLength)-3)
-                    print(avgHTC)
-                    print(self.fineEnvTemperature[x],self.T[x],envResistance)
-                    print(self.fineEnvHeatFlux[x],self.fineHXHeatFlux[x],self.fineAppliedHeatFlux[x])
-                    print(self.fineHeatFlux[x],self.fineDiameter[x])
-                    print("ERR")
-                    break
-
-                partialResistance = self.fineTubeWallThickness[x]/self.fineTubeThermalConductance[x]+1/self.HTC[x+1] #RCLSA
+                dH = (self.fineHeatFlux[x]*pi*self.fineDiameter[x]*(self.fineLength[x+1]-self.fineLength[x]))/self.massFlow #calculate enthalpy difference
+                partialResistance = self.fineTubeWallThickness[x]/self.fineTubeThermalConductance[x]+1/self.HTC[x+1] 
                 self.wallTemperature[x+1] = self.T[x+1]+self.fineHeatFlux[x]*partialResistance #wall temperature
-                self.H[x] = self.H[x+1]-dH #calculate new enthalpy #RCLSA
+                self.H[x] = self.H[x+1]-dH #calculate new enthalpy
                 self.P[x] = self.P[x+1]+newDP*(self.fineLength[x+1]-self.fineLength[x]) #calculate new pressure
                 self.vaporQuality[x] = self.refpropm('Q','P',self.P[x]*1e2,'H',self.H[x],self.Fluid);
                 self.T[x] = self.refpropm('T','P',self.P[x]*1e2,'H',self.H[x],self.Fluid)-273.15;
@@ -290,7 +292,6 @@ class CoolingBranch_v1a:
                 self.vaporQuality[i] = self.refpropm('Q','P',self.P[i]*1e2,'H',self.H[i],self.Fluid);
 
             self.Hconv = np.array(self.H)-np.array(Hprev)
-            converge_prev = converge
             converge = max(self.Hconv) #use enthalpy to converge
             if abs(converge) < convlimit:
                 conv_repeat+=1
@@ -302,55 +303,44 @@ class CoolingBranch_v1a:
         for i in range(len(self.fineLength)):
             self.satTemperature[i] = self.refpropm('T','P',self.P[i]*1e2,'Q',self.vaporQuality[i], self.Fluid)-273.15
 
-        fig, ax1 = pl.subplots(1)
-        yax2 = ax1.twinx()
+        fig1, ax1 = pl.subplots(1)
+        yax1 = ax1.twinx()
         ax1.plot(self.fineLength[1:], self.T[1:], 'g-', label='Temperature (Fluid)')
         ax1.plot(self.fineLength[1:], self.wallTemperature[1:], 'b-', label='Wall Temperature')
-        #ax1.plot(self.fineLength[1:], self.satTemperature[1:], 'c-', label='Saturated Temperature (Fluid)')
-        yax2.plot(self.fineLength[1:], self.P[1:], 'r-', label='Pressure (bar)')
+        yax1.plot(self.fineLength[1:], self.P[1:], 'r-', label='Pressure (bar)')
         ax1.legend()
-        yax2.legend()
+        yax1.legend()
         ax1.set_xlabel('Length (m)')
         ax1.set_ylabel('Temperature (C)', color='g')
-        yax2.set_ylabel('Pressure (bar)', color='b')
+        yax1.set_ylabel('Pressure (bar)', color='b')
         
         fig2, ax2 = pl.subplots(1)
         ax2.axis(xmin=0, xmax=self.vaporQuality[1:].max()*1.1, ymin=0, ymax=self.fineMassFlux.max()*1.1)
-        ax2.plot(self.vaporQuality[1:], self.Gwavy[1:], label='Gwavy')
+        ax2.plot(self.vaporQuality[1:], self.Gwavy[1:], label='Instability')
         ax2.fill_between(self.vaporQuality[1:], 0, self.Gwavy[1:], facecolor='blue', alpha=0.3)
-        ax2.plot(self.vaporQuality[1:], self.Gdry[1:], label='Gdry')
+        ax2.plot(self.vaporQuality[1:], self.Gdry[1:], label='Dry-out')
         ax2.fill_between(self.vaporQuality[1:], self.Gdry[1:], self.fineMassFlux.max()*2, facecolor='orange', alpha=0.3)
         ax2.plot(self.vaporQuality[1:], self.fineMassFlux, '--', label='G')
         ax2.set_xlabel('Vapor Quality')
         ax2.set_ylabel('Mass Flux (kg/m^2s)')
         ax2.legend()
 
-
-        #for i in range(len(self.fineMassFlux)):
-        #    print(self.vaporQuality[1:][i],self.fineMassFlux[i],self.fineLength[i],self.fineAppliedHeatFlux[i],self.fineEnvHeatFlux[i])
-        # ax2.plot(self.fineLength, self.vaporQuality, 'r-')
-        # ax2.set_xlabel('Length (m)')
-        # ax2.set_ylabel('Vapor Quality (Fraction)')
-        # fig3, ax3 = pl.subplots(1)
-        # ax3.plot(self.vaporQuality, self.HTC, 'c-')
-        # ax3.set_xlabel('Vapor Quality (Fraction)')
-        # ax3.set_ylabel('Heat Transfer Coefficient kW/m^2K')
-        # fig, apl.figure(1)
-        # pl.
-        # pl.scatter(self.P, self.T)
-        # pl.xlabel("pressure")
-        # pl.ylabel("temperature")
-        # pl.figure(2)
-        # pl.scatter(self.T, self.HTC)
-        # pl.xlabel("temperature")
-        # pl.ylabel("HTC")
-        # pl.figure(3)
-        # pl.scatter(x.HTC, x.fineHeatFlux)
-        # pl.xlabel("HTC")
-        # pl.ylabel("heat flux")
+        fig3, ax3 = pl.subplots(1)
+        yax3 = ax3.twinx()
+        ax3.plot(self.fineLength[1:], self.HTC[1:], 'g-', label='Heat Transfer Coef')
+        yax3.plot(self.fineLength[1:], self.vaporQuality[1:], 'r-', label='Vapor Quality')
+        ax3.legend()
+        yax3.legend()
+        ax3.set_xlabel('Length (m)')
+        ax3.set_ylabel('HTC (W/m^2K)', color='g')
+        yax3.set_ylabel('Vapor Quality', color='r')
+        
+        print('output/' + self.Name + '_PT.pdf')
+        fig1.savefig('output/' + self.Name + '_PT.pdf')
+        fig2.savefig('output/' + self.Name + '_Flow.pdf')
+        fig3.savefig('output/' + self.Name + '_HTC.pdf')
+        
         pl.show(block=True)
-        #P vs T (Tw)
-
 
 if __name__ == "__main__":
     prefix = "../"
@@ -364,15 +354,7 @@ if __name__ == "__main__":
         cur = x.P[0]-x.P[-1]
         print("\tDelta Pressure: {}".format(cur))
         while cur > float(x.converge):
-            # prevEps = x.eps
-            # prevConverge = x.converge
-            # prevParam = x.param
-            # prevDir = x.dir
             x = CoolingBranch_v1a('CO2', -40, 0, 0, MF*1e-3, path, varyValue=x.varyValue, varyIndex=x.varyIndex, eps=x.eps, converge=x.converge, param=x.param, dir=x.dir)
-            # x.eps = prevEps
-            # x.converge = prevConverge
-            # x.param = prevParam
-            # x.dir = prevDir
             x.start()
             x.run(prt=False)
             cur = x.P[0]-x.P[-1]
@@ -380,7 +362,4 @@ if __name__ == "__main__":
     else:
         x.start()
         x.run()
-    # print(x.P[0]-x.P[-1])
-    # print("Completed. Plotting...")
-    # print
     x.plot()
