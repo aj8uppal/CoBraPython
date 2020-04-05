@@ -13,7 +13,7 @@
       <value>11</value>
   </parameter>
   <parameter name="hydraulic diameter" unit="mm">
-      <value>2.0</value>
+      <value>1.2</value>
       <value>3.0</value>
       <value>3.0</value>
       <value>3.0</value>
@@ -23,7 +23,7 @@
       <value>3.0</value>
       <value>3.0</value>
       <value>3.0</value>
-      <value>2.0</value>
+      <value>6.35</value>
   </parameter>
   <parameter name="tube section length" unit="m">
 <value>2.750</value>

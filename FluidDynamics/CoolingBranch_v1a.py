@@ -27,7 +27,6 @@ class CoolingBranch_v1a:
         self.setPointTemp = Tsp #C
         self.initialVaporQuality = vq0 # vapor quality?
         self.allowedSuperHeatTemp = Tsh #C
-        self.massFlow = MF #kg/s
         self.nargin = len(signature(CoolingBranch_v1a).parameters)
         self.branch=branch
         self.vary = varyIndex != -1
@@ -100,6 +99,9 @@ class CoolingBranch_v1a:
         self.HTCAir = getCol(columns["HTCAir"])
         self.heatFlow=getCol(columns["heatFlow"])
         self.dL=getCol(columns["dL"])
+        self.massFlow = MF #kg/s
+        if self.massFlow is None:
+            self.massFlow = self.heatFlow.sum()*1e-5
     def start(self):
         self.initialize_arrays()
         self.fine_config()
@@ -336,7 +338,6 @@ class CoolingBranch_v1a:
         ax3.set_ylabel('HTC (W/m^2K)', color='g')
         yax3.set_ylabel('Vapor Quality', color='r')
         
-        print('output/' + self.Name + '_PT.pdf')
         fig1.savefig('output/' + self.Name + '_PT.pdf')
         fig2.savefig('output/' + self.Name + '_Flow.pdf')
         fig3.savefig('output/' + self.Name + '_HTC.pdf')
@@ -347,8 +348,8 @@ if __name__ == "__main__":
     prefix = "../"
     filename = "CobraV1a_coupledring.xml" if len(sys.argv) <= 1 else sys.argv[1]
     path = prefix + filename
-    MF = 6
-    x = CoolingBranch_v1a('CO2', -40, 0.01, 0, MF*1e-3, path)
+    MF = None
+    x = CoolingBranch_v1a('CO2', -40, 0.01, 0, MF, path)
     if x.vary:
         x.start()
         x.run(prt=False)
