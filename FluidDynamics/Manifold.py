@@ -1,11 +1,13 @@
-from Node import Node
+class Manifold():
+    
+    def __init__(self):
+        
+        self.Name = None
+        self.Fluid = None
+        self.setPointTemp = None
+        self.initialVaporQuality = None
+        self.allowedSuperHeatTemp = None 
 
-#example manifold
-'''
-                ____
-          _____/    \_____
-         /     \____/     \
-Start   /                  \   End
-        \                  /
-         \________________/
-'''
+        self.branches=[]
+        self.concatenate = False
+
