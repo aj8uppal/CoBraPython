@@ -18,7 +18,7 @@ from FluidDynamicEquations import *
 import warnings
 warnings.filterwarnings('ignore')
 np.set_printoptions(edgeitems=1000)
-class CoolingBranch_v1a:
+class SingleBranch:
     refpropm = RefPropInterface().refpropm
     p=False
     def __init__(self, Fluid, Tsp, vq0, Tsh, MF, xml, branch=None, varyValue=0, varyIndex=-1, eps=None, converge=None, param=None, dir=None):
@@ -245,9 +245,9 @@ class CoolingBranch_v1a:
                     hxResistance = 1/avgHTC+self.fineHXThickness[x]/self.fineHXConductance[x]+1/avgNodeHTC
                     self.fineHXHeatFlux[x] = (self.T[nodeIndex]-self.T[x+1])/hxResistance
                 self.fineHeatFlux[x] = self.fineEnvHeatFlux[x]+self.fineHXHeatFlux[x]+self.fineAppliedHeatFlux[x]
-                newDP, newHTC, newVQ, newRM, newState, newT, newXia, newGwavy, newGwavy_xia, newGstrat, newGbub, newGmist, newGdry = dPandHTC(self.Fluid, self.P[x+1], self.H[x+1], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp, self.refpropm);                
+                newDP, newHTC, newVQ, newRM, newState, newT, newXia, newGwavy, newGwavy_xia, newGstrat, newGbub, newGmist, newGdry = dPandHTC(self.Fluid, self.P[x+1], self.H[x+1], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp, self.refpropm);
                 try:
-                    if np.isnan(newHTC): 
+                    if np.isnan(newHTC):
                         raise ValueError("Oops, I will leave")
                 except ValueError:
                     print('The code stepped away from its hypotheses')
@@ -281,14 +281,14 @@ class CoolingBranch_v1a:
 
 
                 dH = (self.fineHeatFlux[x]*pi*self.fineDiameter[x]*(self.fineLength[x+1]-self.fineLength[x]))/self.massFlow #calculate enthalpy difference
-                partialResistance = self.fineTubeWallThickness[x]/self.fineTubeThermalConductance[x]+1/self.HTC[x+1] 
+                partialResistance = self.fineTubeWallThickness[x]/self.fineTubeThermalConductance[x]+1/self.HTC[x+1]
                 self.wallTemperature[x+1] = self.T[x+1]+self.fineHeatFlux[x]*partialResistance #wall temperature
                 self.H[x] = self.H[x+1]-dH #calculate new enthalpy
                 self.P[x] = self.P[x+1]+newDP*(self.fineLength[x+1]-self.fineLength[x]) #calculate new pressure
                 self.vaporQuality[x] = self.refpropm('Q','P',self.P[x]*1e2,'H',self.H[x],self.Fluid);
                 self.T[x] = self.refpropm('T','P',self.P[x]*1e2,'H',self.H[x],self.Fluid)-273.15;
 
-           
+
             total_dH = self.H[0] - self.refpropm('H','T',self.setPointTemp+273.15,'Q',self.initialVaporQuality,self.Fluid);
             for i in range(len(self.H)):
                 self.H[i] = self.H[i]-total_dH
@@ -309,14 +309,14 @@ class CoolingBranch_v1a:
         fig1, ax1 = pl.subplots(1)
         yax1 = ax1.twinx()
         ax1.plot(self.fineLength[1:], self.T[1:], 'g-', label='Temperature (Fluid)')
-        ax1.plot(self.fineLength[1:], self.wallTemperature[1:], 'b-', label='Wall Temperature')
+        ax1.plot(self.fineLength[1:], self.wallTemperature[1:-1], 'b-', label='Wall Temperature')
         yax1.plot(self.fineLength[1:], self.P[1:], 'r-', label='Pressure (bar)')
         ax1.legend()
         yax1.legend()
         ax1.set_xlabel('Length (m)')
         ax1.set_ylabel('Temperature (C)', color='g')
         yax1.set_ylabel('Pressure (bar)', color='b')
-        
+
         fig2, ax2 = pl.subplots(1)
         ax2.axis(xmin=0, xmax=self.vaporQuality[1:].max()*1.1, ymin=0, ymax=self.fineMassFlux.max()*1.1)
         ax2.plot(self.vaporQuality[1:], self.Gwavy[1:], label='Instability')
@@ -337,11 +337,11 @@ class CoolingBranch_v1a:
         ax3.set_xlabel('Length (m)')
         ax3.set_ylabel('HTC (W/m^2K)', color='g')
         yax3.set_ylabel('Vapor Quality', color='r')
-        
+
         fig1.savefig('output/' + self.Name + '_PT.pdf')
         fig2.savefig('output/' + self.Name + '_Flow.pdf')
         fig3.savefig('output/' + self.Name + '_HTC.pdf')
-        
+
         pl.show(block=True)
 
 if __name__ == "__main__":
@@ -349,14 +349,14 @@ if __name__ == "__main__":
     filename = "CobraV1a_coupledring.xml" if len(sys.argv) <= 1 else sys.argv[1]
     path = prefix + filename
     MF = None
-    x = CoolingBranch_v1a('CO2', -40, 0.01, 0, MF, path)
+    x = SingleBranch('CO2', -40, 0.01, 0, MF, path)
     if x.vary:
         x.start()
         x.run(prt=False)
         cur = x.P[0]-x.P[-1]
         print("\tDelta Pressure: {}".format(cur))
         while cur > float(x.converge):
-            x = CoolingBranch_v1a('CO2', -40, 0, 0, MF*1e-3, path, varyValue=x.varyValue, varyIndex=x.varyIndex, eps=x.eps, converge=x.converge, param=x.param, dir=x.dir)
+            x = SingleBranch('CO2', -40, 0, 0, MF*1e-3, path, varyValue=x.varyValue, varyIndex=x.varyIndex, eps=x.eps, converge=x.converge, param=x.param, dir=x.dir)
             x.start()
             x.run(prt=False)
             cur = x.P[0]-x.P[-1]

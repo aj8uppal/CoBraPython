@@ -1,6 +1,6 @@
 from CoolingBranch_v1a import *
 from scipy.interpolate import interp1d
-
+from functools import reduce
 #vary diameter and external heat applied, perhaps length, section of 50cm, one of 1.5m
 #1 30W, 1 10W, change dL
 #setpointTemp at end must be same
@@ -13,22 +13,38 @@ from scipy.interpolate import interp1d
 
 #user passes in setpointtemp, subcoolingtemp, subheattemp
 
-class Node:
-    def __init__(self, Fluid, Tsp, Tsc, Tsh, MF, xml):
-        self.N = len(minidom.parse(xml).getElementsByTagName("branch"))
-        self.Fluid = Fluid
-        self.setPointTemp = Tsp #C
-        self.subCoolingTemp = Tsc #C
-        self.allowedSuperHeatTemp = Tsh #C
-        self.massFlow = MF #kg/s
+class Vertex():
+    def __init__(branches, fluid, setPointTemp, subCoolingTemp, allowedSuperHeatTemp, massFlow):
+        self.fluid = fluid
+        self.setPointTemp = setPointTemp
+        self.subCoolingTemp = subCoolingTemp
+        self.allowedSuperHeatTemp = allowedSuperHeatTemp
+        self.massFlow = massFlow
+        # self.single = len(branches) == 1
+        self.branches = branches
+    def initialize(self):
+        if(len(self.branches)) == 0:
+            pass
+            #solve
+        if len(self.branches) == 1:
+            return self.branches[0].solve()
+        elif all([self.branches[i].successor == self.branches[i+1].successor for i in range(len(self.branches-1))]):
+            self.simplifiable = True
+            return self.solve()
+        else:
+            for branch in self.branches:
+                branch.successor.initialize()
+    def solve(self):
+        # self.N = len(minidom.parse(xml).getElementsByTagName("branch"))
+        self.N = len(self.branches)
         self.weights = np.full(self.N, self.massFlow/self.N)
         self.dPs = np.zeros_like(self.weights)
         self.epsilon = 1e-3
         self.gamma = 0.0001
         self.totalEnthalpy = -1
         self.iterations = []
+        return self.run()
     def run(self):
-        assert(self.gamma < 0.5)
         self.correction = self.massFlow*1e-1
         self.counts = 0
         # while self.dPs[0] == 0 or abs(max([t - s for s, t in zip(self.dPs, self.dPs[1:])])) > self.epsilon:
@@ -55,13 +71,13 @@ class Node:
         self.diffs = self.dPs-np.full(self.N, avgDP)
         self.weights-=self.gamma*self.diffs
     def present(self):
-        print("\nConverged.")
-        print("End enthalpy: {0:.4f}".format(self.totalEnthalpy))
-        for b in range(self.N):
-            print("Branch #{}".format(b+1))
-            print("\tMass Flow: {}".format(self.weights[b]))
-            print("\tDelta Pressure: {}".format(self.dPs[b]))
-        print("Initial Mass Flow: {0:.8f}\nEnd Sum Mass Flow: {1:.8f}".format(self.massFlow, sum(self.weights)))
+        # print("\nConverged.")
+        # print("End enthalpy: {0:.4f}".format(self.totalEnthalpy))
+        # for b in range(self.N):
+        #     print("Branch #{}".format(b+1))
+        #     print("\tMass Flow: {}".format(self.weights[b]))
+        #     print("\tDelta Pressure: {}".format(self.dPs[b]))
+        # print("Initial Mass Flow: {0:.8f}\nEnd Sum Mass Flow: {1:.8f}".format(self.massFlow, sum(self.weights)))
     def plot(self):
         # f = interp1d(range(len(self.iterations)), self.iterations, kind='quadratic')
         # xnew = np.linspace(0, self.iterations[-1], 500)
