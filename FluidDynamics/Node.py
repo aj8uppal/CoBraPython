@@ -78,6 +78,7 @@ class Vertex():
         #     print("\tMass Flow: {}".format(self.weights[b]))
         #     print("\tDelta Pressure: {}".format(self.dPs[b]))
         # print("Initial Mass Flow: {0:.8f}\nEnd Sum Mass Flow: {1:.8f}".format(self.massFlow, sum(self.weights)))
+        return self.weights, self.dPs
     def plot(self):
         # f = interp1d(range(len(self.iterations)), self.iterations, kind='quadratic')
         # xnew = np.linspace(0, self.iterations[-1], 500)

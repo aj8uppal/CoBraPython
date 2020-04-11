@@ -12,22 +12,26 @@ from time import time
 from dPandHTC import *
 from xml.dom import minidom
 from FluidDynamicEquations import *
+from Manifold import Manifold
 
 #use np arrays
 
 import warnings
 warnings.filterwarnings('ignore')
 np.set_printoptions(edgeitems=1000)
-class SingleBranch:
+class SingleBranch(Manifold):
     refpropm = RefPropInterface().refpropm
     p=False
-    def __init__(self, Fluid, Tsp, vq0, Tsh, MF, xml, branch=None, varyValue=0, varyIndex=-1, eps=None, converge=None, param=None, dir=None):
+    def __init__(self, Fluid, Tsp, vq0, Tsh, MF, xml, predecessors=[], successors=[], branch=None, varyValue=0, varyIndex=-1, eps=None, converge=None, param=None, dir=None):
+        self.xml = xml
+        self.predecessors = predecessors
+        self.successors = successors
         self.Name = (xml.split('/')[-1])[:-4]
         self.Fluid = Fluid
         self.setPointTemp = Tsp #C
         self.initialVaporQuality = vq0 # vapor quality?
         self.allowedSuperHeatTemp = Tsh #C
-        self.nargin = len(signature(CoolingBranch_v1a).parameters)
+        # self.nargin = len(signature(CoolingBranch_v1a).parameters)
         self.branch=branch
         self.vary = varyIndex != -1
         if self.vary:
@@ -102,6 +106,13 @@ class SingleBranch:
         self.massFlow = MF #kg/s
         if self.massFlow is None:
             self.massFlow = self.heatFlow.sum()*1e-5
+        self.start()
+    def __eq__(self, other):
+        return self.xml == other.xml
+    def __repr__(self):
+        return "<Single Branch {}>".format(self.xml)
+    def __str__(self):
+        return self.xml
     def start(self):
         self.initialize_arrays()
         self.fine_config()
@@ -213,7 +224,8 @@ class SingleBranch:
         self.H[-1]=_setPointEnthalpy
 
 
-    def run(self, prt=True):
+    def run(self, prt=False):
+        return 1
         format = lambda x: "'"+x[0]+"', "+",".join(map(str, x[1:]))
         itt=0;
         converge=10000;
@@ -260,7 +272,7 @@ class SingleBranch:
                     print('Temperature', self.T[x+1])
                     print('Pressure', self.P[x+1])
                     print('Enthalpy', self.H[x+1])
-                    print('Envorimental Heat Flux', self.fineEnvHeatFlux[x])
+                    print('Environmental Heat Flux', self.fineEnvHeatFlux[x])
                     print('Heat Exchange Heat Flux', self.fineHXHeatFlux[x])
                     print('Applied Heat Flux', self.fineAppliedHeatFlux[x])
                     print('-----------------------------------------')
@@ -300,7 +312,10 @@ class SingleBranch:
                 conv_repeat+=1
             else:
                 conv_repeat = 0
-
+    def getDP(self):
+        return self.P[-1]-self.P[0]
+    def getEnthalpy(self):
+        return self.H[-1]
     def plot(self):
         self.satTemperature = np.zeros_like(self.fineLength)
         for i in range(len(self.fineLength)):

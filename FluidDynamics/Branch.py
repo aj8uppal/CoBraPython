@@ -8,7 +8,7 @@ class Branch(SingleBranch):
     def solve(self):
         self.start()
         self.run()
-        return {"dP": self.dP[-1]-self.dP[0], "MF": self.massFlow
+        return {"dP": self.dP[-1]-self.dP[0], "MF": self.massFlow}
     def concatenate(self, other)
         #concatenate branch
         pass
