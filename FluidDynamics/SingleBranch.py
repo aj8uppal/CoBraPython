@@ -22,10 +22,10 @@ np.set_printoptions(edgeitems=1000)
 class SingleBranch(Manifold):
     refpropm = RefPropInterface().refpropm
     p=False
-    def __init__(self, Fluid, Tsp, vq0, Tsh, MF, xml, predecessors=[], successors=[], branch=None, varyValue=0, varyIndex=-1, eps=None, converge=None, param=None, dir=None):
+    def __init__(self, Fluid, Tsp, vq0, Tsh, MF, xml, parent=None, branch=None, varyValue=0, varyIndex=-1, eps=None, converge=None, param=None, dir=None):
+        # return
         self.xml = xml
-        self.predecessors = predecessors
-        self.successors = successors
+        self.parent = parent
         self.Name = (xml.split('/')[-1])[:-4]
         self.Fluid = Fluid
         self.setPointTemp = Tsp #C
@@ -113,10 +113,12 @@ class SingleBranch(Manifold):
         return "<Single Branch {}>".format(self.xml)
     def __str__(self):
         return self.xml
-    def start(self):
+    def start(self, run=False):
         self.initialize_arrays()
         self.fine_config()
         self.redefine()
+        if run:
+            self.run()
     def initialize_arrays(self):
         tubeSurfaceArea = self.tubeSectionLength*np.pi*self.diameters
         self.heatFlux = self.heatFlow/tubeSurfaceArea #self.[float('nan')]*(len(self.heatSource))

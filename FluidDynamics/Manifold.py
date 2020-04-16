@@ -4,7 +4,7 @@ from xml.dom import minidom
 
 class Manifold():
 
-    def __init__(self, branches=[], concatenate=False):
+    def __init__(self, base_path, root, parent=None):
 
         from SingleBranch import SingleBranch
         self.SingleBranch = SingleBranch
@@ -14,68 +14,32 @@ class Manifold():
         self.initialVaporQuality = 0.01
         self.allowedSuperHeatTemp = 0
         self.initialMassFlow = None
-        self.xmls = [None]
-        self.branches = branches #array of manifolds (branches)
+        # self.xmls = [None]
+        self.branches = [] #array of manifolds (branches)
         self.xmls = []
-        self.concatenate = concatenate
-
-    def initialize(self, base_path, root):
         self.base_path = base_path
         self.root = root
-        print("Recursively initializing from '{}'...".format(base_path+root))
+        self.parent = parent
+        self.initialize()
 
-        self.explore(root)
-        # self.root = [b for b in self.branches if b.xml == base_path+root][0]
-        self.root = [b for b in self.branches if not len(b.predecessors)][0]
-        self.end = [b for b in self.branches if not b.successors[0]][0]
-        #self.initialize_loops(self.root)
-    def explore(self, rootXML, parent=None):
-        if rootXML == "None":
-            return None
-        rootXML = self.base_path+rootXML
-        if rootXML in self.xmls:
-            branch = [b for b in self.branches if b.xml == rootXML][0]
-            branch.predecessors.append(parent)
-            # print("\t".join([str(branch), str(list(map(str, branch.predecessors))), str(list(map(str, branch.successors)))]))
-            return branch
-        self.xmls.append(rootXML)
-        successors = minidom.parse(rootXML).getElementsByTagName("data")[0].getAttribute("successors").split(",")
-        branch = self.SingleBranch(self.fluid, self.setPointTemp, self.initialVaporQuality, self.allowedSuperHeatTemp, self.initialMassFlow, rootXML, predecessors=[parent])
-        if not branch.predecessors[0]:
-            branch.predecessors = []
-        branch.successors = [self.explore(child_xml, branch) for child_xml in successors]
-        # print("\t".join([str(branch), str(list(map(str, branch.predecessors))), str(list(map(str, branch.successors)))]))
-        self.branches.append(branch)
-        return branch
-    def restructure(self, branch, end):
-        if branch is None:
-            return
-        preds = len(branch.predecessors)
-        succs = len(branch.successors)
-        #CASE 1: Series-Parallel
-        if not preds: #root
-            return Manifold(branches=[branch, Manifold(branches=[self.restructure(successor, end) for successor in branch.successors], concatenate=False), end], concatenate=True)
-        #CASE 2: Parallel
-        if succs > 1:
-            if len(branch.successors[0].successors) == 1 and succs == len(branch.successors[0].successors[0].predecessors): #simplifiable
-                return Manifold(branches=[branch, Manifold(branches=branch.successors, concatenate=False), branch.successors[0].successors[0]], concatenate=True)
-        #CASE 3: Series
-        else:
-            return branch
-    def initialize_loops(self, b):
-        if b is None:
-            return
-        if b.successors[0] and b.successors[0].successors[0] and len(b.successors) == len(b.successors[0].successors[0].predecessors):
-            print(", ".join(map(str, b.successors))+" forms a simplifiable loop")
-        # if len(b.successors) == 1 and b.successors[0].predecessors == [branch for branch in self.branches if b.successors[0] in branch.successors]:
-        #     print("Simplifiable loop, ")
-        for i in b.successors:
-            self.initialize_loops(i)
-        # if len(b.predecessors) == 1:
-        #     if len(b.predecessor[0].successors) == 1):
-        #         print("{} is a single branch".format(b.xml))
-        #     elif b.
-        # if (len(b.predecessors) == 1 and len(b.predecessor[0].successors) > 1)
+    def initialize(self):
+        # print("Recursively initializing from '{}'...".format(base_path+root))
+        self.branches = [(node.getAttribute('type'), node.getAttribute('loc')) for node in minidom.parse(self.base_path+self.root).getElementsByTagName("manifold")]
+        self.series = minidom.parse(self.base_path+self.root).getElementsByTagName("components")[0].getAttribute("type") == "series";
+        self.explore()
+    def explore(self):
+        for b in range(len(self.branches)):
+            branch = self.branches[b]
+            if branch[0] == 'manifold':
+                self.branches[b] = Manifold(self.base_path, branch[1], parent=self)
+            else:
+                self.branches[b] = self.SingleBranch(self.fluid, self.setPointTemp, self.initialVaporQuality, self.allowedSuperHeatTemp, self.initialMassFlow, self.base_path+branch[1], parent=self)
+    def solve(self):
+        for component in self.branches:
+            if component.__class__ == self.SingleBranch:
+                component.start(run=True)
+            else:
+                component.minimize()
     def minimize(self, branches, massFlow):
         return 1
         N = len(branches)
@@ -106,7 +70,6 @@ class Manifold():
             diffs = dPs-np.full(N, avgDP)
             weights-=gamma*diffs
         return weights, totalEnthalpy
-
     def concat(self, *args):
         return 2
         # return sum([*args])
@@ -146,10 +109,10 @@ class Manifold():
 # b3b4 = Manifold()
 
 path = "../XML/Manifoldv1/"
-m = Manifold()
-m.initialize(path, root="branch0.xml")
-root = m.restructure(m.root, m.end)
-print(root.run())
+m = Manifold(path, "manifold0.xml")
+# b = m.initialize(path, "manifold0.xml")
+# root = m.restructure(m.root, m.end)
+# print(root.run())
 # m.prettyprint()
 # n = Manifold(path, root="branch1.xml")
 # n.prettyprint()
