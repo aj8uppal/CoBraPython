@@ -30,6 +30,7 @@ class SingleBranch(Manifold):
         self.Fluid = Fluid
         self.setPointTemp = Tsp #C
         self.initialVaporQuality = vq0 # vapor quality?
+        self.finalVaporQualityGuess = 0.5
         self.allowedSuperHeatTemp = Tsh #C
         # self.nargin = len(signature(CoolingBranch_v1a).parameters)
         self.branch=branch
@@ -222,12 +223,14 @@ class SingleBranch(Manifold):
         self.H = np.ones_like(self.fineLength)*_enthalpy
 
         # This is the set point information, which is fixed
-        _setPointPressure = self.refpropm('P','T',self.setPointTemp+273.15,'Q',0.5,self.Fluid)*1e-2
-        _setPointEnthalpy = self.refpropm('H','T',self.setPointTemp+273.15,'Q',0.5,self.Fluid)
+        _setPointPressure = self.refpropm('P','T',self.setPointTemp+273.15,'Q',self.finalVaporQualityGuess,self.Fluid)*1e-2
+        _setPointEnthalpy = self.refpropm('H','T',self.setPointTemp+273.15,'Q',self.finalVaporQualityGuess,self.Fluid)
         self.T[-1]=self.setPointTemp
         self.P[-1]=_setPointPressure
         self.H[-1]=_setPointEnthalpy
 
+    def setFinalVaporQualityGuess(self, vq):
+        self.finalVaporQualityGuess = vq
 
     def main(self, SH=None, ST=None, prt=False):
         # return 1
@@ -325,6 +328,10 @@ class SingleBranch(Manifold):
         return self.H[-1]
     def getStartEnthalpy(self):
         return self.H[0]
+    def getStartPressure(self):
+        return self.P[0]
+    def getFinalVaporQuality(self):
+        return self.vaporQuality[-1]
     def getInitialTemp(self):
         return self.T[0]
     def plot(self):

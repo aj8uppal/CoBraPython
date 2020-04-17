@@ -5,13 +5,13 @@ import numpy as np
 
 class Manifold():
 
-    def __init__(self, base_path, root, initialMassFlow, initialVaporQuality=None, parent=None):
+    def __init__(self, base_path, root, initialMassFlow, initialVaporQuality=None, setPointTemp=None, parent=None):
 
         from SingleBranch import SingleBranch
         self.SingleBranch = SingleBranch
         self.Name = base_path+root
         self.fluid = "CO2"
-        self.setPointTemp = -40
+        self.setPointTemp = setPointTemp
         self.initialVaporQuality = initialVaporQuality or 0.1
         self.allowedSuperHeatTemp = 0
         self.initialMassFlow = initialMassFlow
@@ -31,14 +31,15 @@ class Manifold():
         # print("Recursively initializing from '{}'...".format(base_path+root))
         self.branches = [(node.getAttribute('type'), node.getAttribute('loc')) for node in minidom.parse(self.base_path+self.root).getElementsByTagName("manifold")]
         self.series = minidom.parse(self.base_path+self.root).getElementsByTagName("components")[0].getAttribute("type") == "series";
+        self.setPointTemp = # add XML field which may or may not exist
         self.explore()
     def explore(self):
         for b in range(len(self.branches)):
             branch = self.branches[b]
             if branch[0] == 'manifold':
-                self.branches[b] = Manifold(self.base_path, branch[1], self.initialMassFlow if self.series else self.initialMassFlow/len(self.branches), initialVaporQuality=self.initialVaporQuality+(b+1)*(0.5-self.initialVaporQuality)/len(self.branches), parent=self)
+                self.branches[b] = Manifold(self.base_path, branch[1], self.initialMassFlow if self.series else self.initialMassFlow/len(self.branches), initialVaporQuality=self.initialVaporQuality+(b+1)*(0.5-self.initialVaporQuality)/len(self.branches), setPointTemp=self.setPointTemp, parent=self)
             else:
-                self.branches[b] = self.SingleBranch(self.fluid, self.setPointTemp, self.initialVaporQuality if not self.series else self.initialVaporQuality+(b+1)*(0.5-self.initialVaporQuality)/len(self.branches), self.allowedSuperHeatTemp, self.initialMassFlow if self.series else self.initialMassFlow/len(self.branches), self.base_path+branch[1], parent=self)
+                self.branches[b] = self.SingleBranch(self.fluid, self.setPointTemp, self.initialVaporQuality if not self.series else self.initialVaporQuality+(b+1)*(0.5-self.initialVaporQuality)/len(self.branches), self.allowedSuperHeatTemp, self.initialMassFlow if self.series else self.initialMassFlow/len(self.branches), self.base_path+branch[1], setPointTemp=self.setPointTemp, parent=self)
     # def solve(self):
     #     for component in self.branches:
     #         if component.__class__ == self.SingleBranch:
@@ -94,16 +95,53 @@ class Manifold():
         return self.ST
     def getDP(self):
         return self.dP
-    def concat(self):
-        #series, MF is constant
-        dP = 0
-        for b in self.branches[::-1]:
-            b.run(ST=self.ST, run=True)
-            self.ST = b.getInitialTemp()
-            dP+=b.getDP()
-        self.dP = dP
-        return dP
+    def getFinalVaporQuality(self):
+        return self.branches[-1].getFinalVaporQuality()
+    def getInitialTemp(self):
+        return self.branches[0].getInitialTemp()
 
+    def concat(self):
+
+        vaporQualities = np.linspace(self.initialVaporQuality, 0.5, len(self.branches)+1)
+        temperatures = np.ones_like(vaporQualities)*self.setPointTemp
+
+        enthapies = np.ones_like(vaporQualities)*self.refpropm('H','T',self.setPointTemp+273.15,'Q',self.initialVaporQuality,self.Fluid)
+
+        itt=0;
+        converge=10000;
+        convlimit=40;
+        conv_repeat=0;
+        conv_repeat_limit=3;
+        ittstop = 400
+
+        while (abs(converge)>convlimit or conv_repeat<conv_repeat_limit+1) and itt<ittstop:
+            itt+=1
+
+            for ibranch in range(len(branches)-1, -1, -1):
+                # these will remain unchanged
+                self.branches[ibranch].setPointTemp = temperatures[ibranch+1]
+                self.branches[ibranch].initialVaporQuality = vaporQualities[ibranch]
+                # this will change
+                self.branches[ibranch].finalVaporQualityGuess = vaporQualities[ibranch+1]
+                # update
+                self.branches[ibranch].run(run = True)
+                # update things that actually change
+                vaporQualities[ibranch+1] = self.branches[ibranch].getFinalVaporQuality()            
+                temperatures[ibranch] = self.branches[ibranch].getInitialTemp()
+
+            prev_enthalpies = np.copy(entalpies)
+            for i,enthalpy in enumerate(enthalpies):
+                enthalpy = self.refpropm('H','T',temperatures[i]+273.15,'Q',vaporQualities[i],self.Fluid)
+
+            diff_enthalpies = np.abs(enthalpies-prev_enthalpies)
+            converge = np.amax(diff_enthalpies) #use enthalpy to converge
+            if abs(converge) < convlimit:
+                conv_repeat+=1
+            else:
+                conv_repeat = 0
+
+        return vaporQualities[-1]
+    
     # def __repr__(self):
         # return self.Name
     def __str__(self):
