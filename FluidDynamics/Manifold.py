@@ -38,7 +38,7 @@ class Manifold():
             if branch[0] == 'manifold':
                 self.branches[b] = Manifold(self.base_path, branch[1], self.initialMassFlow if self.series else self.initialMassFlow/len(self.branches), initialVaporQuality=self.initialVaporQuality+(b+1)*(0.5-self.initialVaporQuality)/len(self.branches), parent=self)
             else:
-                self.branches[b] = self.SingleBranch(self.fluid, self.setPointTemp, self.initialVaporQuality+(b+1)*(0.5-self.initialVaporQuality)/len(self.branches), self.allowedSuperHeatTemp, self.initialMassFlow if self.series else self.initialMassFlow/len(self.branches), self.base_path+branch[1], parent=self)
+                self.branches[b] = self.SingleBranch(self.fluid, self.setPointTemp, self.initialVaporQuality if not self.series else self.initialVaporQuality+(b+1)*(0.5-self.initialVaporQuality)/len(self.branches), self.allowedSuperHeatTemp, self.initialMassFlow if self.series else self.initialMassFlow/len(self.branches), self.base_path+branch[1], parent=self)
     # def solve(self):
     #     for component in self.branches:
     #         if component.__class__ == self.SingleBranch:
@@ -160,7 +160,7 @@ class Manifold():
 
 path = "../XML/Manifoldv1/"
 rootXML = "manifold0.xml"
-MF = 5e-4
+MF = 5e-3
 m = Manifold(path, rootXML, MF)
 # b = m.initialize(path, "manifold0.xml")
 # root = m.restructure(m.root, m.end)
