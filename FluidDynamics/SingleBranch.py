@@ -106,19 +106,22 @@ class SingleBranch(Manifold):
         self.massFlow = MF #kg/s
         if self.massFlow is None:
             self.massFlow = self.heatFlow.sum()*1e-5
-        self.start()
+    def updateMassFlow(self, newMF):
+        self.massFlow = newMF
     def __eq__(self, other):
         return self.xml == other.xml
     def __repr__(self):
         return "<Single Branch {}>".format(self.xml)
     def __str__(self):
         return self.xml
-    def start(self, run=False):
+    def run(self, ST=None, ivq=None, run=False):
+        self.setPointTemp = ST if ST else self.setPointTemp
+        self.initialVaporQuality = ivq if ivq else self.initialVaporQuality
         self.initialize_arrays()
         self.fine_config()
         self.redefine()
         if run:
-            self.run()
+            return self.main()
     def initialize_arrays(self):
         tubeSurfaceArea = self.tubeSectionLength*np.pi*self.diameters
         self.heatFlux = self.heatFlow/tubeSurfaceArea #self.[float('nan')]*(len(self.heatSource))
@@ -226,8 +229,8 @@ class SingleBranch(Manifold):
         self.H[-1]=_setPointEnthalpy
 
 
-    def run(self, prt=False):
-        return 1
+    def main(self, SH=None, ST=None, prt=False):
+        # return 1
         format = lambda x: "'"+x[0]+"', "+",".join(map(str, x[1:]))
         itt=0;
         converge=10000;
@@ -264,6 +267,7 @@ class SingleBranch(Manifold):
                     if np.isnan(newHTC):
                         raise ValueError("Oops, I will leave")
                 except ValueError:
+                    # if prt:
                     print('The code stepped away from its hypotheses')
                     print('-----------------------------------------')
                     print('Step ', x)
@@ -314,10 +318,15 @@ class SingleBranch(Manifold):
                 conv_repeat+=1
             else:
                 conv_repeat = 0
+        return self.getStartEnthalpy(), self.T[0]
     def getDP(self):
         return self.P[-1]-self.P[0]
-    def getEnthalpy(self):
+    def getFinalEnthalpy(self):
         return self.H[-1]
+    def getStartEnthalpy(self):
+        return self.H[0]
+    def getInitialTemp(self):
+        return self.T[0]
     def plot(self):
         self.satTemperature = np.zeros_like(self.fineLength)
         for i in range(len(self.fineLength)):
@@ -326,7 +335,7 @@ class SingleBranch(Manifold):
         fig1, ax1 = pl.subplots(1)
         yax1 = ax1.twinx()
         ax1.plot(self.fineLength[1:], self.T[1:], 'g-', label='Temperature (Fluid)')
-        ax1.plot(self.fineLength[1:], self.wallTemperature[1:-1], 'b-', label='Wall Temperature')
+        ax1.plot(self.fineLength[1:-1], self.wallTemperature[1:-1], 'b-', label='Wall Temperature')
         yax1.plot(self.fineLength[1:], self.P[1:], 'r-', label='Pressure (bar)')
         ax1.legend()
         yax1.legend()
@@ -368,17 +377,17 @@ if __name__ == "__main__":
     MF = None
     x = SingleBranch('CO2', -40, 0.01, 0, MF, path)
     if x.vary:
-        x.start()
-        x.run(prt=False)
+        x.run()
+        x.main(prt=False)
         cur = x.P[0]-x.P[-1]
         print("\tDelta Pressure: {}".format(cur))
         while cur > float(x.converge):
             x = SingleBranch('CO2', -40, 0, 0, MF*1e-3, path, varyValue=x.varyValue, varyIndex=x.varyIndex, eps=x.eps, converge=x.converge, param=x.param, dir=x.dir)
-            x.start()
-            x.run(prt=False)
+            x.run()
+            x.main(prt=False)
             cur = x.P[0]-x.P[-1]
             print("\tDelta Pressure: {}".format(cur))
     else:
-        x.start()
         x.run()
-    x.plot()
+        x.main()
+    # x.plot()
