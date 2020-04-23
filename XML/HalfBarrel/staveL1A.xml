@@ -7,26 +7,42 @@
       <value>5</value>
       <value>6</value>
       <value>7</value>
+      <value>8</value>
+      <value>9</value>
+      <value>10</value>
+      <value>11</value>
   </parameter>
   <parameter name="hydraulic diameter" unit="mm">
-      <value>0.8</value>
-      <value>2.3</value>
-      <value>2.3</value>
-      <value>2.3</value>
-      <value>2.3</value>
-      <value>2.3</value>
-      <value>6.35</value>
+      <value>1.2</value>
+      <value>3.0</value>
+      <value>3.0</value>
+      <value>3.0</value>
+      <value>3.0</value>
+      <value>3.0</value>
+      <value>3.0</value>
+      <value>3.0</value>
+      <value>3.0</value>
+      <value>3.0</value>
+      <value>3.125</value>
   </parameter>
   <parameter name="tube section length" unit="m">
 <value>2.70</value>
 <value>0.50</value>
-<value>0.04</value>
+<value>0.08</value>
 <value>0.50</value>
-<value>0.04</value>
+<value>0.08</value>
+<value>0.50</value>
+<value>0.08</value>
+<value>0.50</value>
+<value>0.08</value>
 <value>0.50</value>
 <value>2.70</value>
   </parameter>
   <parameter name="tube orientation angle" unit="deg">
+<value>0</value>
+<value>0</value>
+<value>0</value>
+<value>0</value>
 <value>0</value>
 <value>0</value>
 <value>0</value>
@@ -43,6 +59,10 @@
 <value>0</value>
 <value>0</value>
 <value>0</value>
+<value>0</value>
+<value>0</value>
+<value>0</value>
+<value>0</value>
   </parameter>
   <parameter name="HX with Node #" unit="dimensionless">
     <value>0</value>
@@ -52,8 +72,16 @@
     <value>4</value>
     <value>5</value>
     <value>6</value>
+    <value>7</value>
+    <value>8</value>
+    <value>9</value>
+    <value>10</value>
   </parameter>
   <parameter name="HX Flow direction (co-current=1, counter-current=-1" unit="dimensionless">
+    <value>0</value>
+    <value>0</value>
+    <value>0</value>
+    <value>0</value>
     <value>0</value>
     <value>0</value>
     <value>0</value>
@@ -70,8 +98,16 @@
       <value>0</value>
       <value>0</value>
       <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
   </parameter>
   <parameter name="HX thickness" unit="mm">
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
+      <value>0</value>
       <value>0</value>
       <value>0</value>
       <value>0</value>
@@ -87,6 +123,10 @@
       <value>0.01E-03</value>
       <value>0.01E-03</value>
       <value>0.01E-03</value>
+      <value>0.01E-03</value>
+      <value>0.01E-03</value>
+      <value>0.01E-03</value>
+      <value>0.01E-03</value>
       <value>3.14E-02</value>
   </parameter>
   <parameter name="Environmental temperature" unit="C">
@@ -97,17 +137,26 @@
       <value>-10</value>
       <value>-10</value>
       <value>-10</value>
+      <value>-10</value>
+      <value>-10</value>
+      <value>-10</value>
+      <value>-10</value>
   </parameter>
   <parameter name="Tube wall thickness" unit="mm">
 <value>0.25</value>
-<value>0.15</value>
-<value>0.15</value>
-<value>0.15</value>
-<value>0.15</value>
-<value>0.15</value>
+<value>0.25</value>
+<value>0.25</value>
+<value>0.25</value>
+<value>0.25</value>
+<value>0.25</value>
+<value>0.25</value>
+<value>0.25</value>
+<value>0.25</value>
+<value>0.25</value>
 <value>0.25</value>
   </parameter>
   <parameter name="Insulation thickness" unit="mm">
+<value>3.125</value>
 <value>0</value>
 <value>0</value>
 <value>0</value>
@@ -115,8 +164,15 @@
 <value>0</value>
 <value>0</value>
 <value>0</value>
+<value>0</value>
+<value>0</value>
+<value>3.125</value>
   </parameter>
   <parameter name="Tube thermal conductance" unit="W/mK">
+<value>16.4</value>
+<value>16.4</value>
+<value>16.4</value>
+<value>16.4</value>
 <value>16.4</value>
 <value>16.4</value>
 <value>16.4</value>
@@ -133,18 +189,30 @@
 <value>10</value>
 <value>10</value>
 <value>10</value>
+<value>10</value>
+<value>10</value>
+<value>10</value>
+<value>10</value>
   </parameter>
   <parameter name="Heat Flow" unit="W">
     <value>0</value>
-    <value>67.2</value>
+    <value>134.4</value>
     <value>0</value>
-    <value>67.2</value>
+    <value>134.4</value>
     <value>0</value>
-    <value>67.2</value>
+    <value>134.4</value>
+    <value>0</value>
+    <value>134.4</value>
+    <value>0</value>
+    <value>134.4</value>
     <value>0</value>
   </parameter>
   <parameter name="dL" unit="m">
       <value>1e-2</value>
+      <value>1e-3</value>
+      <value>1e-3</value>
+      <value>1e-3</value>
+      <value>1e-3</value>
       <value>1e-3</value>
       <value>1e-3</value>
       <value>1e-3</value>

@@ -15,7 +15,7 @@
       <value>2.3</value>
       <value>2.3</value>
       <value>2.3</value>
-      <value>6.35</value>
+      <value>3.125</value>
   </parameter>
   <parameter name="tube section length" unit="m">
 <value>2.70</value>
@@ -108,13 +108,13 @@
 <value>0.25</value>
   </parameter>
   <parameter name="Insulation thickness" unit="mm">
+<value>3.125</value>
 <value>0</value>
 <value>0</value>
 <value>0</value>
 <value>0</value>
 <value>0</value>
-<value>0</value>
-<value>0</value>
+<value>3.125</value>
   </parameter>
   <parameter name="Tube thermal conductance" unit="W/mK">
 <value>16.4</value>

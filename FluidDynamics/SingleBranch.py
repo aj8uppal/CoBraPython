@@ -5,6 +5,7 @@ os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as pl
+import random
 from math import pi
 from inspect import signature
 from time import time
@@ -12,6 +13,7 @@ from dPandHTC import *
 from xml.dom import minidom
 from FluidDynamicEquations import *
 from Manifold import Manifold
+
 
 #use np arrays
 
@@ -310,13 +312,17 @@ class SingleBranch(Manifold):
                 self.T[x] = self.refpropm('T','P',self.P[x]*1e2,'H',self.H[x],self.Fluid)-273.15
 
             total_dH = self.H[0] - self.refpropm('H','P',self.P[0]*1e2,'Q',self.initialVaporQuality,self.Fluid)
+            total_dH = random.uniform(0.6,1.0)*total_dH
             print("Shifting enthalpy: ", self.initialVaporQuality, self.H[0], total_dH)
             for i in range(len(self.H)):
                 self.H[i] = self.H[i]-total_dH
                 self.vaporQuality[i] = self.refpropm('Q','P',self.P[i]*1e2,'H',self.H[i],self.Fluid);
 
-            self.Hconv = np.array(self.H)-np.array(Hprev)
-            converge = max(self.Hconv) #use enthalpy to converge
+            self.Hconv = np.abs(self.H-Hprev)
+            converge = np.amax(self.Hconv) #use enthalpy to converge
+            
+#            self.Hconv = np.array(self.H)-np.array(Hprev)
+#            converge = max(self.Hconv) #use enthalpy to converge
             if abs(converge) < convlimit:
                 conv_repeat+=1
             else:
@@ -336,6 +342,9 @@ class SingleBranch(Manifold):
         return self.vaporQuality[-1]
     def getInitialTemp(self):
         return self.T[0]
+    def getTotalAppliedHeat(self):
+        return self.heatFlow.sum()
+    
     def plot(self):
         print("Plotting SB")
         self.satTemperature = np.zeros_like(self.fineLength)

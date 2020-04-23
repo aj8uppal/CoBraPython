@@ -14,7 +14,7 @@ class Manifold():
         self.Name = base_path+root
         self.Fluid = "CO2"
         self.setPointTemp = setPointTemp
-        self.initialVaporQuality = initialVaporQuality or 0.1
+        self.initialVaporQuality = initialVaporQuality or 0.01
         self.allowedSuperHeatTemp = 0
         self.initialMassFlow = initialMassFlow
         self.branches = [] #array of manifolds (branches)
@@ -60,6 +60,9 @@ class Manifold():
     def minimize(self):
         N = len(self.branches)
         weights = np.full(N, self.initialMassFlow/N)
+        for i in range(N):
+            weights[i]=self.initialMassFlow*self.branches[i].getTotalAppliedHeat()/self.getTotalAppliedHeat()
+            
         print("Total mass flow for {}: {} kg/s".format(" ".join(map(str, self.branches)), self.initialMassFlow))
         dPs = np.zeros_like(weights)
         epsilon = 0.005
@@ -94,11 +97,19 @@ class Manifold():
         return self.branches[0].getStartPressure()   
     def getFinalPressure(self):
         return self.branches[-1].getFinalPressure()  
+    def getTotalAppliedHeat(self):
+        retval = 0
+        for b in self.branches:
+            retval = retval + b.getTotalAppliedHeat()
+        return retval
     
     def concat(self):
 
         print('Solving concatenation')
         vaporQualities = np.linspace(self.initialVaporQuality, 0.5, len(self.branches)+1)
+        for i in range(1,len(vaporQualities)):
+            vaporQualities[i]=vaporQualities[i-1]+(0.5-self.initialVaporQuality)*self.branches[i].getTotalAppliedHeat()/self.getTotalAppliedHeat()
+
         temperatures = np.ones_like(vaporQualities)*self.setPointTemp
         print('Initial guesses')
         print('Vapor qualities: ', vaporQualities)
@@ -188,7 +199,9 @@ class Manifold():
         ST = ST or self.setPointTemp
         
         if len(self.branches)==1:
-            return self.branches[0].run(run=True)
+            self.branches[0].run(run=True)
+            print(self.getDP())
+            return
         else:
             if self.series == True:
                 print("Concatenating {}".format(" ".join(map(str, self.branches))))
