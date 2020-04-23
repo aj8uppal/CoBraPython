@@ -7,7 +7,6 @@ import numpy as np
 import matplotlib.pyplot as pl
 from math import pi
 from inspect import signature
-from refprop import RefPropInterface
 from time import time
 from dPandHTC import *
 from xml.dom import minidom
@@ -20,7 +19,7 @@ import warnings
 warnings.filterwarnings('ignore')
 np.set_printoptions(edgeitems=1000)
 class SingleBranch(Manifold):
-    refpropm = RefPropInterface().refpropm
+    
     p=False
     def __init__(self, Fluid, Tsp, vq0, Tsh, MF, xml, parent=None, branch=None, varyValue=0, varyIndex=-1, eps=None, converge=None, param=None, dir=None):
         # return
@@ -122,7 +121,8 @@ class SingleBranch(Manifold):
         self.fine_config()
         self.redefine()
         if run:
-            return self.main()
+            print('Child will run now')
+            return self.main(prt=True)
     def initialize_arrays(self):
         tubeSurfaceArea = self.tubeSectionLength*np.pi*self.diameters
         self.heatFlux = self.heatFlow/tubeSurfaceArea #self.[float('nan')]*(len(self.heatSource))
@@ -247,10 +247,10 @@ class SingleBranch(Manifold):
         while (abs(converge)>convlimit or conv_repeat<conv_repeat_limit+1) and itt<ittstop:
             itt+=1
             if prt:
-                print("\nIteration Round: {}".format(itt))
-                print("Iteration offset: {} (Stops at {})".format(converge, convlimit))
-                print("Enthalpy: {} J/kg".format(max(self.H)))
-                print("Iteration offset: {} (Stops at {})".format(conv_repeat, conv_repeat_limit))
+                print("\n SB Iteration Round: {}".format(itt))
+                print("SB Iteration offset: {} (Stops at {})".format(converge, convlimit))
+                print("SB Enthalpy: {} J/kg".format(max(self.H)))
+                print("SB Iteration offset: {} (Stops at {})".format(conv_repeat, conv_repeat_limit))
             Hprev = np.copy(self.H)
 
             for x in range(len(self.fineLength)-2,-1,-1):
