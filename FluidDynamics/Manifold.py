@@ -107,7 +107,7 @@ class Manifold():
         converge=10000;
         convlimit=40;
         conv_repeat=0;
-        conv_repeat_limit=3;
+        conv_repeat_limit=2;
         ittstop = 400
 
         while (abs(converge)>convlimit or conv_repeat<conv_repeat_limit+1) and itt<ittstop:
@@ -130,14 +130,22 @@ class Manifold():
                 vaporQualities[ibranch+1] = self.branches[ibranch].getFinalVaporQuality()            
                 temperatures[ibranch] = self.branches[ibranch].getInitialTemp()
 
+            print("Before updating")
+            print('Vapor qualities: ', vaporQualities)
+            print('Temperatures: ', temperatures)
+            print('Enthalpy: ', enthalpies)
             prev_enthalpies = np.copy(enthalpies)
             for i,enthalpy in enumerate(enthalpies):
-                enthalpy = self.refpropm('H','T',temperatures[i]+273.15,'Q',vaporQualities[i],self.Fluid)
+                enthalpies[i] = self.refpropm('H','T',temperatures[i]+273.15,'Q',vaporQualities[i],self.Fluid)
+            print("Recalculating enthalpy")
+            print('Vapor qualities: ', vaporQualities)
+            print('Temperatures: ', temperatures)
+            print('Enthalpy: ', enthalpies)
 
-            print("Updated value", self.initialVaporQuality)            
+            print("Shifting enthalpy", self.initialVaporQuality)            
             total_dH = self.getStartEnthalpy() - self.refpropm('H','T',temperatures[0]+273.15,'Q',self.initialVaporQuality,self.Fluid);
             for i,enthalpy in enumerate(enthalpies):
-                enthalpy = enthalpy - total_dH
+                enthalpies[i] = enthalpy - total_dH
                 vaporQualities[i] = self.refpropm('Q','T',temperatures[i]+273.15,'H',enthalpy,self.Fluid);
             print('Vapor qualities: ', vaporQualities)
             print('Temperatures: ', temperatures)

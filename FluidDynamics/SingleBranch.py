@@ -306,11 +306,11 @@ class SingleBranch(Manifold):
                 self.wallTemperature[x+1] = self.T[x+1]+self.fineHeatFlux[x]*partialResistance #wall temperature
                 self.H[x] = self.H[x+1]-dH #calculate new enthalpy
                 self.P[x] = self.P[x+1]+newDP*(self.fineLength[x+1]-self.fineLength[x]) #calculate new pressure
-                self.vaporQuality[x] = self.refpropm('Q','P',self.P[x]*1e2,'H',self.H[x],self.Fluid);
-                self.T[x] = self.refpropm('T','P',self.P[x]*1e2,'H',self.H[x],self.Fluid)-273.15;
+                self.vaporQuality[x] = self.refpropm('Q','P',self.P[x]*1e2,'H',self.H[x],self.Fluid)
+                self.T[x] = self.refpropm('T','P',self.P[x]*1e2,'H',self.H[x],self.Fluid)-273.15
 
-
-            total_dH = self.H[0] - self.refpropm('H','P',self.P[0]*1e2,'Q',self.initialVaporQuality,self.Fluid);
+            total_dH = self.H[0] - self.refpropm('H','P',self.P[0]*1e2,'Q',self.initialVaporQuality,self.Fluid)
+            print("Shifting enthalpy: ", self.initialVaporQuality, self.H[0], total_dH)
             for i in range(len(self.H)):
                 self.H[i] = self.H[i]-total_dH
                 self.vaporQuality[i] = self.refpropm('Q','P',self.P[i]*1e2,'H',self.H[i],self.Fluid);
