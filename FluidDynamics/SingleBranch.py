@@ -337,6 +337,7 @@ class SingleBranch(Manifold):
     def getInitialTemp(self):
         return self.T[0]
     def plot(self):
+        print("Plotting SB")
         self.satTemperature = np.zeros_like(self.fineLength)
         for i in range(len(self.fineLength)):
             self.satTemperature[i] = self.refpropm('T','P',self.P[i]*1e2,'Q',self.vaporQuality[i], self.Fluid)-273.15
@@ -377,7 +378,7 @@ class SingleBranch(Manifold):
         fig2.savefig('output/' + self.Name + '_Flow.pdf')
         fig3.savefig('output/' + self.Name + '_HTC.pdf')
 
-        pl.show(block=True)
+        #pl.show(block=True)
 
 if __name__ == "__main__":
     prefix = "../"

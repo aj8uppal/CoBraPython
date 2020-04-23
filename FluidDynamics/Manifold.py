@@ -178,8 +178,9 @@ class Manifold():
                 print(b.massFlow if var == "IMF" else "")                
                 
     def plot(self):
+        print("Plotting manifold")
         for b in self.branches:
-            b.Plot()
+            b.plot()
             
     def run(self, ST=None, run=None):
         print('RCLSA', self.series)
