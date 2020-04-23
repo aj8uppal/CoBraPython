@@ -130,8 +130,12 @@ class Manifold():
                 vaporQualities[ibranch+1] = self.branches[ibranch].getFinalVaporQuality()            
                 temperatures[ibranch] = self.branches[ibranch].getInitialTemp()
 
-            print("Updated value")            
-            total_dH = self.getStartEnthalpy() - self.refpropm('H','T',self.setPointTemp+273.15,'Q',self.initialVaporQuality,self.Fluid);
+            prev_enthalpies = np.copy(enthalpies)
+            for i,enthalpy in enumerate(enthalpies):
+                enthalpy = self.refpropm('H','T',temperatures[i]+273.15,'Q',vaporQualities[i],self.Fluid)
+
+            print("Updated value", self.initialVaporQuality)            
+            total_dH = self.getStartEnthalpy() - self.refpropm('H','T',temperatures[0]+273.15,'Q',self.initialVaporQuality,self.Fluid);
             for i,enthalpy in enumerate(enthalpies):
                 enthalpy = enthalpy - total_dH
                 vaporQualities[i] = self.refpropm('Q','T',temperatures[i]+273.15,'H',enthalpy,self.Fluid);
@@ -139,10 +143,6 @@ class Manifold():
             print('Temperatures: ', temperatures)
             print('Enthalpy: ', enthalpies)
 
-
-            prev_enthalpies = np.copy(enthalpies)
-            for i,enthalpy in enumerate(enthalpies):
-                enthalpy = self.refpropm('H','T',temperatures[i]+273.15,'Q',vaporQualities[i],self.Fluid)
 
             diff_enthalpies = np.abs(enthalpies-prev_enthalpies)
             converge = np.amax(diff_enthalpies) #use enthalpy to converge

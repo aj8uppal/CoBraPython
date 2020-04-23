@@ -310,7 +310,7 @@ class SingleBranch(Manifold):
                 self.T[x] = self.refpropm('T','P',self.P[x]*1e2,'H',self.H[x],self.Fluid)-273.15;
 
 
-            total_dH = self.H[0] - self.refpropm('H','T',self.setPointTemp+273.15,'Q',self.initialVaporQuality,self.Fluid);
+            total_dH = self.H[0] - self.refpropm('H','P',self.P[0]*1e2,'Q',self.initialVaporQuality,self.Fluid);
             for i in range(len(self.H)):
                 self.H[i] = self.H[i]-total_dH
                 self.vaporQuality[i] = self.refpropm('Q','P',self.P[i]*1e2,'H',self.H[i],self.Fluid);
