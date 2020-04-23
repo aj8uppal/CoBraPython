@@ -24,8 +24,6 @@ class Manifold():
         self.parent = parent
         self.series = None
         self.ST = None
-        self.SH = None
-        self.dP = 0
         self.initialize()
 
     def initialize(self):
@@ -64,7 +62,7 @@ class Manifold():
         weights = np.full(N, self.initialMassFlow/N)
         print("Total mass flow for {}: {} kg/s".format(" ".join(map(str, self.branches)), self.initialMassFlow))
         dPs = np.zeros_like(weights)
-        epsilon = 0.01
+        epsilon = 0.005
         gamma = 0.001
         counts = 0
 
@@ -83,13 +81,19 @@ class Manifold():
         return avgDP
 
     def getDP(self):
-        return self.dP
+        return self.branches[-1].getFinalPressure() - self.branches[0].getStartPressure()
+    def getFinalEnthalpy(self):
+        return self.branches[-1].getFinalEnthalpy()
     def getFinalVaporQuality(self):
         return self.branches[-1].getFinalVaporQuality()
     def getInitialTemp(self):
         return self.branches[0].getInitialTemp()
     def getStartEnthalpy(self):
         return self.branches[0].getStartEnthalpy()
+    def getStartPressure(self):
+        return self.branches[0].getStartPressure()   
+    def getFinalPressure(self):
+        return self.branches[-1].getFinalPressure()  
     
     def concat(self):
 

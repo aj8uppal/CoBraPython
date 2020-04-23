@@ -12,7 +12,7 @@ if __name__ == '__main__':
     MF = 5e-3
     m = Manifold(path, rootXML, 2e-3, 0.01, -35.)
     m.run()
-    m.Plot()
+    m.plot()
 """
                     Fig. 1
                   __________

@@ -330,6 +330,8 @@ class SingleBranch(Manifold):
         return self.H[0]
     def getStartPressure(self):
         return self.P[0]
+    def getFinalPressure(self):
+        return self.P[-1]
     def getFinalVaporQuality(self):
         return self.vaporQuality[-1]
     def getInitialTemp(self):
