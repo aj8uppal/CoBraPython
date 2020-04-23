@@ -32,6 +32,7 @@ class Manifold():
         self.branches = [(node.getAttribute('type'), node.getAttribute('loc')) for node in minidom.parse(self.base_path+self.root).getElementsByTagName("manifold")]
         self.series = minidom.parse(self.base_path+self.root).getElementsByTagName("components")[0].getAttribute("type") == "series";
         self.explore()
+
     def explore(self):
         for b in range(len(self.branches)):
             branch = self.branches[b]
@@ -57,19 +58,18 @@ class Manifold():
                 branch.updateMassFlow(self.initialMassFlow/len(self.branches))
             else:
                 branch.updateMassFlow(self.initialMassFlow)
+
     def minimize(self):
         N = len(self.branches)
         weights = np.full(N, self.initialMassFlow/N)
-        print("Total mass flow for {}: {}".format(" ".join(map(str, self.branches)), self.initialMassFlow))
+        print("Total mass flow for {}: {} kg/s".format(" ".join(map(str, self.branches)), self.initialMassFlow))
         dPs = np.zeros_like(weights)
-        epsilon = 1e-2
-        gamma = 0.0001
-#        totalEnthalpy = -1
-#        iterations = []
+        epsilon = 0.01
+        gamma = 0.001
         counts = 0
 
         while dPs[0] == 0 or dPs.std() > epsilon:
- #           totalEnthalpy = 0
+
             for b in range(len(self.branches)):
                 branch = self.branches[b]
                 branch.updateMassFlow(weights[b])
@@ -78,7 +78,6 @@ class Manifold():
             counts+=1
             print("Iteration {}:\n\tmass flows in each branch: {}\n\tdelta pressure in each branch: {}".format(counts, weights, dPs))
             avgDP = dPs.mean()
- #           std = dPs.std()
             diffs = dPs-np.full(N, avgDP)
             weights+=gamma*diffs
         return avgDP
@@ -160,9 +159,7 @@ class Manifold():
                 conv_repeat = 0
 
         return vaporQualities[-1]
-    
-    # def __repr__(self):
-        # return self.Name
+       
     def __str__(self):
         return self.root
   
@@ -174,7 +171,12 @@ class Manifold():
                 b.prettyprint(i=i+1, var=var)
             else:
                 print((i+1)*"\t|"+str(b), end="    ")
-                print(b.massFlow if var == "IMF" else "")
+                print(b.massFlow if var == "IMF" else "")                
+                
+    def plot(self):
+        for b in self.branches:
+            b.Plot()
+            
     def run(self, ST=None, run=None):
         print('RCLSA', self.series)
  
