@@ -183,14 +183,18 @@ class Manifold():
             b.plot()
             
     def run(self, ST=None, run=None):
-        print('RCLSA', self.series)
+#        print('RCLSA', self.series)
  
         ST = ST or self.setPointTemp
-        if self.series == True:
-            print("Concatenating {}".format(" ".join(map(str, self.branches))))
-            return self.concat()
+        
+        if len(self.branches)==1:
+            return self.branches[0].run(run=True)
         else:
-            print("Minimizing {}".format(" ".join(map(str, self.branches))))
-            return self.minimize()
+            if self.series == True:
+                print("Concatenating {}".format(" ".join(map(str, self.branches))))
+                return self.concat()
+            else:
+                print("Minimizing {}".format(" ".join(map(str, self.branches))))
+                return self.minimize()
 
 
