@@ -1,0 +1,8 @@
+<data>
+  <components type="parallel">
+    <manifold type="branch" loc="coupledRingB.xml"></manifold>
+    <manifold type="branch" loc="coupledRingC.xml"></manifold>
+    <manifold type="branch" loc="l1RingA.xml"></manifold>
+    <manifold type="branch" loc="shortyRingA.xml"></manifold>
+  </components>
+</data>
