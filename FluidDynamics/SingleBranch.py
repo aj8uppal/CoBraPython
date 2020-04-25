@@ -360,7 +360,7 @@ class SingleBranch(Manifold):
         fig1, ax1 = pl.subplots(1)
         yax1 = ax1.twinx()
         ax1.plot(self.fineLength[1:], self.T[1:], 'g-', label='Temperature (Fluid)')
-        ax1.plot(self.fineLength[1:], self.T[H:], 'c-', label='Temperature (Saturation)')
+        ax1.plot(self.fineLength[1:], self.H[1:], 'c-', label='Temperature (Saturation)')
         ax1.plot(self.fineLength[1:-1], self.wallTemperature[1:-1], 'b-', label='Temperature (Wall)')
         yax1.plot(self.fineLength[1:], self.P[1:], 'r-', label='Pressure (bar)')
         ax1.legend()
