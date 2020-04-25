@@ -355,12 +355,13 @@ class SingleBranch(Manifold):
         print("Plotting SB")
         self.satTemperature = np.zeros_like(self.fineLength)
         for i in range(len(self.fineLength)):
-            self.satTemperature[i] = self.refpropm('T','P',self.P[i]*1e2,'Q',self.vaporQuality[i], self.Fluid)-273.15
+            self.satTemperature[i] = self.refpropm('T','P',self.P[i]*1e2,'H',self.H[i], self.Fluid)-273.15
 
         fig1, ax1 = pl.subplots(1)
         yax1 = ax1.twinx()
         ax1.plot(self.fineLength[1:], self.T[1:], 'g-', label='Temperature (Fluid)')
-        ax1.plot(self.fineLength[1:-1], self.wallTemperature[1:-1], 'b-', label='Wall Temperature')
+        ax1.plot(self.fineLength[1:], self.T[H:], 'c-', label='Temperature (Saturation)')
+        ax1.plot(self.fineLength[1:-1], self.wallTemperature[1:-1], 'b-', label='Temperature (Wall)')
         yax1.plot(self.fineLength[1:], self.P[1:], 'r-', label='Pressure (bar)')
         ax1.legend()
         yax1.legend()
