@@ -11,6 +11,9 @@ class Manifold():
 
         from SingleBranch import SingleBranch
         self.SingleBranch = SingleBranch
+        from Restrictor import Restrictor
+        self.Restrictor = Restrictor
+        
         self.Name = base_path+root
         self.Fluid = "CO2"
         self.setPointTemp = setPointTemp
