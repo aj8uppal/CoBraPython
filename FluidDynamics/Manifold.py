@@ -7,7 +7,7 @@ from refprop import RefPropInterface
 class Manifold():
     
     refpropm = RefPropInterface().refpropm
-    def __init__(self, base_path, root, initialMassFlow, initialVaporQuality=None, setPointTemp=None, parent=None):
+    def __init__(self, base_path, root, initialMassFlow, initialVaporQuality=None, setPointTemp=None, subcoolingTemp=None, parent=None):
 
         from SingleBranch import SingleBranch
         self.SingleBranch = SingleBranch
@@ -15,7 +15,7 @@ class Manifold():
         self.Fluid = "CO2"
         self.setPointTemp = setPointTemp
         self.initialVaporQuality = initialVaporQuality or 0.01
-        self.allowedSuperHeatTemp = 0
+        self.SubcoolingTemp = subcoolingTemp
         self.initialMassFlow = initialMassFlow
         self.branches = [] #array of manifolds (branches)
         self.xmls = []
@@ -40,12 +40,13 @@ class Manifold():
                                             self.initialMassFlow if self.series else self.initialMassFlow/len(self.branches), 
                                             initialVaporQuality=self.initialVaporQuality+(b+1)*(0.5-self.initialVaporQuality)/len(self.branches), 
                                             setPointTemp=self.setPointTemp, 
+                                            subcoolingTemp=self.SubcoolingTemp,
                                             parent=self)
             else:
                 self.branches[b] = self.SingleBranch(Fluid=self.Fluid, 
                                                      Tsp=self.setPointTemp, 
                                                      vq0 = self.initialVaporQuality if not self.series else self.initialVaporQuality+(b+1)*(0.5-self.initialVaporQuality)/len(self.branches), 
-                                                     Tsh = self.allowedSuperHeatTemp, 
+                                                     Tsc = self.SubcoolingTemp, 
                                                      MF = self.initialMassFlow if self.series else self.initialMassFlow/len(self.branches), 
                                                      xml = self.base_path+branch[1], 
                                                      parent=self)
@@ -66,7 +67,7 @@ class Manifold():
         print("Total mass flow for {}: {} kg/s".format(" ".join(map(str, self.branches)), self.initialMassFlow))
         dPs = np.zeros_like(weights)
         epsilon = 0.005
-        gamma = 0.001
+        gamma = 0.0001
         counts = 0
 
         while dPs[0] == 0 or dPs.std() > epsilon:
@@ -105,6 +106,7 @@ class Manifold():
     
     def concat(self):
 
+        # This series only work on two-phase.
         print('Solving concatenation')
         vaporQualities = np.linspace(self.initialVaporQuality, 0.5, len(self.branches)+1)
         for i in range(1,len(vaporQualities)):
@@ -156,7 +158,6 @@ class Manifold():
             print('Temperatures: ', temperatures)
             print('Enthalpy: ', enthalpies)
 
-            print("Shifting enthalpy", self.initialVaporQuality)            
             total_dH = self.getStartEnthalpy() - self.refpropm('H','T',temperatures[0]+273.15,'Q',self.initialVaporQuality,self.Fluid);
             for i,enthalpy in enumerate(enthalpies):
                 enthalpies[i] = enthalpy - total_dH

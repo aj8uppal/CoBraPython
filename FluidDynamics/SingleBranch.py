@@ -23,7 +23,7 @@ np.set_printoptions(edgeitems=1000)
 class SingleBranch(Manifold):
     
     p=False
-    def __init__(self, Fluid, Tsp, vq0, Tsh, MF, xml, parent=None, branch=None, varyValue=0, varyIndex=-1, eps=None, converge=None, param=None, dir=None):
+    def __init__(self, Fluid, Tsp, vq0, Tsc, MF, xml, parent=None, branch=None, varyValue=0, varyIndex=-1, eps=None, converge=None, param=None, dir=None):
         # return
         self.xml = xml
         self.parent = parent
@@ -32,7 +32,7 @@ class SingleBranch(Manifold):
         self.setPointTemp = Tsp #C
         self.initialVaporQuality = vq0 # vapor quality?
         self.finalVaporQualityGuess = 0.5
-        self.allowedSuperHeatTemp = Tsh #C
+        self.SubcoolingTemp = Tsc #C
         # self.nargin = len(signature(CoolingBranch_v1a).parameters)
         self.branch=branch
         self.vary = varyIndex != -1
@@ -267,7 +267,7 @@ class SingleBranch(Manifold):
                     hxResistance = 1/avgHTC+self.fineHXThickness[x]/self.fineHXConductance[x]+1/avgNodeHTC
                     self.fineHXHeatFlux[x] = (self.T[nodeIndex]-self.T[x+1])/hxResistance
                 self.fineHeatFlux[x] = self.fineEnvHeatFlux[x]+self.fineHXHeatFlux[x]+self.fineAppliedHeatFlux[x]
-                newDP, newHTC, newVQ, newRM, newState, newT, newXia, newGwavy, newGwavy_xia, newGstrat, newGbub, newGmist, newGdry = dPandHTC(self.Fluid, self.P[x+1], self.H[x+1], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], self.allowedSuperHeatTemp, self.refpropm);
+                newDP, newHTC, newVQ, newRM, newState, newT, newXia, newGwavy, newGwavy_xia, newGstrat, newGbub, newGmist, newGdry = dPandHTC(self.Fluid, self.P[x+1], self.H[x+1], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], 0, self.refpropm);
                 try:
                     if np.isnan(newHTC):
                         raise ValueError("Oops, I will leave")
@@ -312,6 +312,12 @@ class SingleBranch(Manifold):
                 self.T[x] = self.refpropm('T','P',self.P[x]*1e2,'H',self.H[x],self.Fluid)-273.15
 
             total_dH = self.H[0] - self.refpropm('H','P',self.P[0]*1e2,'Q',self.initialVaporQuality,self.Fluid)
+            
+            if self.SubcoolingTemp:
+                total_dH = self.H[0] - self.refpropm('H','P',self.P[0]*1e2,'T',self.SubcoolingTemp+273.15,self.Fluid)
+            else:
+                total_dH = self.H[0] - self.refpropm('H','P',self.P[0]*1e2,'Q',self.initialVaporQuality,self.Fluid)
+            
             total_dH = random.uniform(0.6,1.0)*total_dH
             print("Shifting enthalpy: ", self.initialVaporQuality, self.H[0], total_dH)
             for i in range(len(self.H)):
