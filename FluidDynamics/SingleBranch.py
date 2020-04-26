@@ -23,17 +23,26 @@ np.set_printoptions(edgeitems=1000)
 class SingleBranch(Manifold):
     
     p=False
-    def __init__(self, Fluid, Tsp, vq0, Tsc, MF, xml, parent=None, branch=None, varyValue=0, varyIndex=-1, eps=None, converge=None, param=None, dir=None):
+    def __init__(self, Fluid, Tsp, vq0, vq0_point, Tsc, MF, xml, parent=None, branch=None, varyValue=0, varyIndex=-1, eps=None, converge=None, param=None, dir=None):
+        
         # return
         self.xml = xml
         self.parent = parent
         self.Name = (xml.split('/')[-1])[:-4]
         self.Fluid = Fluid
+        
+        
+        # This model the set point temperature of a 2-PACL system
         self.setPointTemp = Tsp #C
-        self.initialVaporQuality = vq0 # vapor quality?
-        self.finalVaporQualityGuess = 0.5
+        # These two model a warm nose
+        self.initialVaporQuality = vq0 
+        self.initialVaporQualitySector = vq0_point
+        # This is to model the situation where you enter with a
+        # liquid at fixed temperature (quite dangerous)        
         self.SubcoolingTemp = Tsc #C
-        # self.nargin = len(signature(CoolingBranch_v1a).parameters)
+
+        self.finalVaporQualityGuess = 0.5
+        
         self.branch=branch
         self.vary = varyIndex != -1
         if self.vary:
@@ -152,7 +161,6 @@ class SingleBranch(Manifold):
         dLtm = self.tubeSectionLength/np.round(self.tubeSectionLength/self.dL)
         N = self.tubeSectionLength/dLtm
 
-
         # if sections will exchange heat, assume they have the same number of elements
         # if the section is only in thermal contact with air, HXNode == index of the section
         for i in range(len(N)):
@@ -164,6 +172,15 @@ class SingleBranch(Manifold):
         self.SP = np.cumsum(N)
         self.SP = np.append([0],self.SP)
         self.SP = self.SP.astype(int)
+        
+        self.initialVaporQualityFineSector = None
+        if self.initialVaporQualitySector:
+            self.initialVaporQualityFineSector = self.SP[int(self.initialVaporQualitySector)-1]
+        print('RCLSA testing', 
+              self.SP, 
+              self.initialVaporQualitySector, 
+              self.initialVaporQualityFineSector, 
+              self.SubcoolingTemp)
 
         for i,n in enumerate(N):
             n = int(round(n))
@@ -188,7 +205,7 @@ class SingleBranch(Manifold):
         self.fineHeatFlux = np.zeros_like(self.fineAppliedHeatFlux)
         self.fineHXNode = self.fineHXNode.astype(int)
         self.finePerimeterArea = np.pi*self.fineDiameter*self.finedLtm
-        self.vaporQuality = np.zeros_like(self.fineLength) #[float('nan')]*len(self.fineLength)
+        self.vaporQuality = np.zeros_like(self.fineLength)
         self.relativeMass = np.zeros_like(self.fineLength)
         self.wallTemperature = np.zeros_like(self.fineLength)
         self.State = ['']*len(self.fineLength)
@@ -311,10 +328,12 @@ class SingleBranch(Manifold):
                 self.vaporQuality[x] = self.refpropm('Q','P',self.P[x]*1e2,'H',self.H[x],self.Fluid)
                 self.T[x] = self.refpropm('T','P',self.P[x]*1e2,'H',self.H[x],self.Fluid)-273.15
 
-            total_dH = self.H[0] - self.refpropm('H','P',self.P[0]*1e2,'Q',self.initialVaporQuality,self.Fluid)
-            
+           
             if self.SubcoolingTemp:
                 total_dH = self.H[0] - self.refpropm('H','P',self.P[0]*1e2,'T',self.SubcoolingTemp+273.15,self.Fluid)
+            elif self.initialVaporQualityFineSector:
+                print('Calculating shift')
+                total_dH = self.H[self.initialVaporQualityFineSector] - self.refpropm('H','P',self.P[self.initialVaporQualityFineSector]*1e2,'Q',self.initialVaporQuality,self.Fluid)
             else:
                 total_dH = self.H[0] - self.refpropm('H','P',self.P[0]*1e2,'Q',self.initialVaporQuality,self.Fluid)
             
@@ -326,9 +345,7 @@ class SingleBranch(Manifold):
 
             self.Hconv = np.abs(self.H-Hprev)
             converge = np.amax(self.Hconv) #use enthalpy to converge
-            
-#            self.Hconv = np.array(self.H)-np.array(Hprev)
-#            converge = max(self.Hconv) #use enthalpy to converge
+
             if abs(converge) < convlimit:
                 conv_repeat+=1
             else:
@@ -353,21 +370,30 @@ class SingleBranch(Manifold):
     
     def plot(self):
         print("Plotting SB")
+        #pl.style.use('output/atlas.mplstyle')
+        
         self.satTemperature = np.zeros_like(self.fineLength)
+        self.satPressure = np.zeros_like(self.fineLength)
         for i in range(len(self.fineLength)):
             self.satTemperature[i] = self.refpropm('T','P',self.P[i]*1e2,'H',self.H[i], self.Fluid)-273.15
-
+            self.satPressure[i] = self.refpropm('P','T',self.T[i]+273.15,'H',self.H[i], self.Fluid)/1e2
+            
+        for i in range(len(self.fineLength)):
+            if self.satPressure[i] < 0:
+                self.satPressure[i] = self.satPressure[i-1]
+                
         fig1, ax1 = pl.subplots(1)
         yax1 = ax1.twinx()
         ax1.plot(self.fineLength[1:], self.T[1:], 'g-', label='Temperature (Fluid)')
         ax1.plot(self.fineLength[1:], self.satTemperature[1:], 'c-', label='Temperature (Saturation)')
         ax1.plot(self.fineLength[1:-1], self.wallTemperature[1:-1], 'b-', label='Temperature (Wall)')
-        yax1.plot(self.fineLength[1:], self.P[1:], 'r-', label='Pressure (bar)')
-        ax1.legend()
-        yax1.legend()
+        yax1.plot(self.fineLength[1:], self.P[1:], 'r-', label='Pressure (Fluid)')
+        yax1.plot(self.fineLength[1:], self.satPressure[1:], 'm-', label='Pressure (Saturation)')
+        ax1.legend(loc='upper right')
+        yax1.legend(loc='lower right')
         ax1.set_xlabel('Length (m)')
-        ax1.set_ylabel('Temperature (C)', color='g')
-        yax1.set_ylabel('Pressure (bar)', color='b')
+        ax1.set_ylabel('Temperature [C]', color='g')
+        yax1.set_ylabel('Pressure [bar]', color='b')
 
         fig2, ax2 = pl.subplots(1)
         ax2.axis(xmin=0, xmax=self.vaporQuality[1:].max()*1.1, ymin=0, ymax=self.fineMassFlux.max()*1.1)
@@ -384,8 +410,8 @@ class SingleBranch(Manifold):
         yax3 = ax3.twinx()
         ax3.plot(self.fineLength[1:], self.HTC[1:], 'g-', label='Heat Transfer Coef')
         yax3.plot(self.fineLength[1:], self.vaporQuality[1:], 'r-', label='Vapor Quality')
-        ax3.legend()
-        yax3.legend()
+        ax3.legend(loc='upper left')
+        yax3.legend(loc='lower right')
         ax3.set_xlabel('Length (m)')
         ax3.set_ylabel('HTC (W/m^2K)', color='g')
         yax3.set_ylabel('Vapor Quality', color='r')

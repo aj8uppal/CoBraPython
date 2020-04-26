@@ -7,7 +7,7 @@ from refprop import RefPropInterface
 class Manifold():
     
     refpropm = RefPropInterface().refpropm
-    def __init__(self, base_path, root, initialMassFlow, initialVaporQuality=None, setPointTemp=None, subcoolingTemp=None, parent=None):
+    def __init__(self, base_path, root, initialMassFlow, initialVaporQuality=None, initialVaporQualitySector = None, setPointTemp=None, subcoolingTemp=None, parent=None):
 
         from SingleBranch import SingleBranch
         self.SingleBranch = SingleBranch
@@ -15,9 +15,10 @@ class Manifold():
         self.Restrictor = Restrictor
         
         self.Name = base_path+root
-        self.Fluid = "CO2"
+        self.Fluid = "CO2" # this has to be determined by the XML... update later.
         self.setPointTemp = setPointTemp
-        self.initialVaporQuality = initialVaporQuality or 0.01
+        self.initialVaporQuality = initialVaporQuality or 0.01 #put 1% just to be safe
+        self.initialVaporQualitySector = initialVaporQualitySector
         self.SubcoolingTemp = subcoolingTemp
         self.initialMassFlow = initialMassFlow
         self.branches = [] #array of manifolds (branches)
@@ -42,6 +43,7 @@ class Manifold():
                                             branch[1], 
                                             self.initialMassFlow if self.series else self.initialMassFlow/len(self.branches), 
                                             initialVaporQuality=self.initialVaporQuality+(b+1)*(0.5-self.initialVaporQuality)/len(self.branches), 
+                                            initialVaporQualitySector = self.initialVaporQualitySector if b==0 else None, 
                                             setPointTemp=self.setPointTemp, 
                                             subcoolingTemp=self.SubcoolingTemp,
                                             parent=self)
@@ -49,6 +51,7 @@ class Manifold():
                 self.branches[b] = self.SingleBranch(Fluid=self.Fluid, 
                                                      Tsp=self.setPointTemp, 
                                                      vq0 = self.initialVaporQuality if not self.series else self.initialVaporQuality+(b+1)*(0.5-self.initialVaporQuality)/len(self.branches), 
+                                                     vq0_point = self.initialVaporQualitySector if b==0 else None,
                                                      Tsc = self.SubcoolingTemp, 
                                                      MF = self.initialMassFlow if self.series else self.initialMassFlow/len(self.branches), 
                                                      xml = self.base_path+branch[1], 
