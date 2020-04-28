@@ -4,7 +4,7 @@
       <value>2</value>
   </parameter>
   <parameter name="hydraulic diameter" unit="mm">
-      <value>0.45</value>
+      <value>0.443</value>
       <value>1.5</value>
   </parameter>
   <parameter name="tube section length" unit="m">
@@ -61,7 +61,7 @@
   </parameter>
   <parameter name="Heat Flow" unit="W">
     <value>0</value>
-    <value>84</value>
+    <value>110.16</value>
   </parameter>
   <parameter name="dL" unit="m">
       <value>1e-3</value>

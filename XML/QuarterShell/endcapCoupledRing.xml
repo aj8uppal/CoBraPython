@@ -1,5 +1,5 @@
 <data>
   <components type="parallel">
-    <manifold type="branch" loc="coudpledRingB.xml"></manifold>
+    <manifold type="branch" loc="coupledRingB.xml"></manifold>
   </components>
 </data>

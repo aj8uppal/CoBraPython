@@ -8,7 +8,7 @@
       <value>6</value>
   </parameter>
   <parameter name="hydraulic diameter" unit="mm">
-      <value>0.65</value>
+      <value>0.685</value>
       <value>2.3</value>
       <value>2.3</value>
       <value>2.3</value>
@@ -121,11 +121,11 @@
   </parameter>
   <parameter name="Heat Flow" unit="W">
     <value>0</value>
-    <value>25.2</value>
+    <value>33.6</value>
     <value>0</value>
-    <value>224</value>
+    <value>293.7</value>
     <value>0</value>
-    <value>25.2</value>
+    <value>33.6</value>
   </parameter>
   <parameter name="dL" unit="m">
       <value>1e-3</value>
