@@ -1,8 +1,5 @@
-# import sys
-# sys.path.append('../../REFPROP')
-# from refprop import RefPropInterface
-from ColebrookEquation import *
-from BlasiusCorrelation import *
+from .ColebrookEquation import *
+from .BlasiusCorrelation import *
 from time import time
 
 #VERIFIED

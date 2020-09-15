@@ -1,0 +1,6 @@
+<data>
+  <components type="parallel">
+    <manifold type="manifold" loc="manifold2.xml"></manifold>
+    <manifold type="branch" loc="branch2.xml"></manifold>
+  </components>
+</data>

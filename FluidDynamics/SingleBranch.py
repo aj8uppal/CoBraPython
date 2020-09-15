@@ -1,7 +1,6 @@
 import sys, os
-sys.path.append('PressureDropAndHeatTransfer')
 sys.path.append('../REFPROP')
-os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as pl
@@ -14,16 +13,17 @@ from xml.dom import minidom
 from FluidDynamicEquations import *
 from Manifold import Manifold
 
-
 #use np arrays
-
 import warnings
 warnings.filterwarnings('ignore')
 np.set_printoptions(edgeitems=1000)
+
+import runinfo
+
 class SingleBranch(Manifold):
     
     p=False
-    def __init__(self, Fluid, Tsp, vq0, vq0_point, Tsc, MF, xml, parent=None, branch=None, varyValue=0, varyIndex=-1, eps=None, converge=None, param=None, dir=None):
+    def __init__(self, Fluid, Tsp, vq0, vq0_point, MF, xml, parent=None, branch=None):
         
         # return
         self.xml = xml
@@ -32,27 +32,17 @@ class SingleBranch(Manifold):
         self.Fluid = Fluid
         
         
-        # This model the set point temperature of a 2-PACL system
+        # This model the set point temperature of a PACL system
         self.setPointTemp = Tsp #C
         # These two model a warm nose
         self.initialVaporQuality = vq0 
         self.initialVaporQualitySector = vq0_point
-        # This is to model the situation where you enter with a
-        # liquid at fixed temperature (quite dangerous)        
-        self.SubcoolingTemp = Tsc #C
 
         self.finalVaporQualityGuess = 0.5
+        self.finalPressureGuess = 0
+        self.finalUsePressureGuess = False
         
         self.branch=branch
-        self.vary = varyIndex != -1
-        if self.vary:
-            self.dir = dir
-            self.varyValue = float(varyValue)
-            self.eps = float(eps)
-            self.param = param
-            self.converge = float(converge)
-            self.dir = dir
-            self.varyIndex = varyIndex
         columns = {
             "section": 0,
             "hydraulicDiameter": 1, # in mm
@@ -70,30 +60,14 @@ class SingleBranch(Manifold):
             "tubeThermalConductance": 13,
             "HTCAir": 14,
             "heatFlow": 15,
-            "dL": 16
+            "dL": 16,
+            "corrModel": 17 # 0: thome, 1: flex, 2: chisholm, 3: friedel, 4: thomex2 ?
         }
         def getCol(N):
             parsed = []
             for j in range(len(params[N].getElementsByTagName("*"))):
                 i = params[N].getElementsByTagName("*")[j]
-                if i.tagName == "vary":
-                    if self.vary:
-                        # if self.dir == "up":
-                        self.varyValue+=0.1
-                    else:
-                        self.varyIndex = i
-                        self.varyValue = i.firstChild.data
-                        self.eps = i.getAttribute("eps")
-                        self.param = i.getAttribute("parameter")
-                        self.dir = i.getAttribute("dir")
-                        self.converge = i.getAttribute("converge")
-                        self.vary = True
-
-                    parsed.append(self.varyValue)
-                    print("{}: {}".format(list(columns.keys())[j+1], self.varyValue))
-                    # breakpoint()
-                else:
-                    parsed.append(i.firstChild.data)
+                parsed.append(i.firstChild.data)
             return np.array(list(map(float, parsed)))
         data = minidom.parse(xml)
         params = data.getElementsByTagName("parameter") if not branch else data.getElementsByTagName("branch")[int(branch)].getElementsByTagName("parameter")
@@ -114,6 +88,7 @@ class SingleBranch(Manifold):
         self.HTCAir = getCol(columns["HTCAir"])
         self.heatFlow=getCol(columns["heatFlow"])
         self.dL=getCol(columns["dL"])
+        self.corrModel=getCol(columns["corrModel"])
         self.massFlow = MF #kg/s
         if self.massFlow is None:
             self.massFlow = self.heatFlow.sum()*1e-5
@@ -156,6 +131,7 @@ class SingleBranch(Manifold):
         self.fineTubeThermalConductance = []
         self.finedLtm = []
         self.fineHXThickness = []
+        self.fineCorrModel = []
 
         # approximate dL to the closest value that allow for integer steps
         dLtm = self.tubeSectionLength/np.round(self.tubeSectionLength/self.dL)
@@ -176,11 +152,6 @@ class SingleBranch(Manifold):
         self.initialVaporQualityFineSector = None
         if self.initialVaporQualitySector:
             self.initialVaporQualityFineSector = self.SP[int(self.initialVaporQualitySector)-1]
-        print('RCLSA testing', 
-              self.SP, 
-              self.initialVaporQualitySector, 
-              self.initialVaporQualityFineSector, 
-              self.SubcoolingTemp)
 
         for i,n in enumerate(N):
             n = int(round(n))
@@ -201,7 +172,8 @@ class SingleBranch(Manifold):
             self.fineTubeWallThickness = np.append(self.fineTubeWallThickness, [self.tubeWallThickness[i]]*n)
             self.fineInsulationThickness = np.append(self.fineInsulationThickness, [self.ISOThickness[i]]*n)
             self.fineTubeThermalConductance = np.append(self.fineTubeThermalConductance, [self.tubeThermalConductance[i]]*n)
-
+            self.fineCorrModel = np.append(self.fineCorrModel, [self.corrModel[i]]*n)
+ 
         self.fineHeatFlux = np.zeros_like(self.fineAppliedHeatFlux)
         self.fineHXNode = self.fineHXNode.astype(int)
         self.finePerimeterArea = np.pi*self.fineDiameter*self.finedLtm
@@ -244,12 +216,19 @@ class SingleBranch(Manifold):
         # This is the set point information, which is fixed
         _setPointPressure = self.refpropm('P','T',self.setPointTemp+273.15,'Q',self.finalVaporQualityGuess,self.Fluid)*1e-2
         _setPointEnthalpy = self.refpropm('H','T',self.setPointTemp+273.15,'Q',self.finalVaporQualityGuess,self.Fluid)
+
+        if self.finalUsePressureGuess:
+            _setPointPressure = self.finalPressureGuess
+            _setPointEnthalpy = self.refpropm('H','T',self.setPointTemp+273.15,'P',self.finalPressureGuess*1e2,self.Fluid)
+
         self.T[-1]=self.setPointTemp
         self.P[-1]=_setPointPressure
         self.H[-1]=_setPointEnthalpy
 
     def setFinalVaporQualityGuess(self, vq):
         self.finalVaporQualityGuess = vq
+    def setFinalPressureGuess(self, pg):
+        self.finalPressureGuess = pg
 
     def main(self, SH=None, ST=None, prt=False):
         # return 1
@@ -284,7 +263,7 @@ class SingleBranch(Manifold):
                     hxResistance = 1/avgHTC+self.fineHXThickness[x]/self.fineHXConductance[x]+1/avgNodeHTC
                     self.fineHXHeatFlux[x] = (self.T[nodeIndex]-self.T[x+1])/hxResistance
                 self.fineHeatFlux[x] = self.fineEnvHeatFlux[x]+self.fineHXHeatFlux[x]+self.fineAppliedHeatFlux[x]
-                newDP, newHTC, newVQ, newRM, newState, newT, newXia, newGwavy, newGwavy_xia, newGstrat, newGbub, newGmist, newGdry = dPandHTC(self.Fluid, self.P[x+1], self.H[x+1], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], 0, self.refpropm);
+                newDP, newHTC, newVQ, newRM, newState, newT, newXia, newGwavy, newGwavy_xia, newGstrat, newGbub, newGmist, newGdry = dPandHTC(self.Fluid, self.P[x+1], self.H[x+1], self.fineMassFlux[x], self.fineHeatFlux[x], self.fineDiameter[x], 0.25*pi*self.fineDiameter[x]**2, pi*self.fineDiameter[x], self.fineRoughness[x], self.fineInclination[x], 0, self.refpropm, False, self.fineCorrModel[x]);
                 try:
                     if np.isnan(newHTC):
                         raise ValueError("Oops, I will leave")
@@ -311,11 +290,6 @@ class SingleBranch(Manifold):
                 self.relativeMass[x+1] = newRM
                 self.State[x+1] = newState
                 self.T[x+1] = newT
-                #self.xia[x+1] = float('nan') if not newXia else newXia.real
-                #self.Gwavy_xia[x+1] = float('nan') if not newGwavy_xia else newGwavy_xia.real
-                #self.Gstrat[x+1] = float('nan') if not newGstrat else newGstrat.real
-                #self.Gbub[x+1] = float('nan') if not newGbub else newGbub.real
-                #self.Gmist[x+1] = float('nan') if not newGmist else newGmist.real
                 self.Gwavy[x+1] = float('nan') if not newGwavy else newGwavy.real
                 self.Gdry[x+1] = float('nan') if not newGdry else newGdry.real
 
@@ -328,16 +302,16 @@ class SingleBranch(Manifold):
                 self.vaporQuality[x] = self.refpropm('Q','P',self.P[x]*1e2,'H',self.H[x],self.Fluid)
                 self.T[x] = self.refpropm('T','P',self.P[x]*1e2,'H',self.H[x],self.Fluid)-273.15
 
-           
-            if self.SubcoolingTemp:
-                total_dH = self.H[0] - self.refpropm('H','P',self.P[0]*1e2,'T',self.SubcoolingTemp+273.15,self.Fluid)
-            elif self.initialVaporQualityFineSector:
-                print('Calculating shift')
+            print('Calculating shift')
+            total_dH = 0
+            if self.initialVaporQualityFineSector:
                 total_dH = self.H[self.initialVaporQualityFineSector] - self.refpropm('H','P',self.P[self.initialVaporQualityFineSector]*1e2,'Q',self.initialVaporQuality,self.Fluid)
+            elif self.finalUsePressureGuess:
+                total_dH = 0.0
             else:
                 total_dH = self.H[0] - self.refpropm('H','P',self.P[0]*1e2,'Q',self.initialVaporQuality,self.Fluid)
             
-            total_dH = random.uniform(0.6,1.0)*total_dH
+            total_dH = random.uniform(0.8,1.0)*total_dH
             print("Shifting enthalpy: ", self.initialVaporQuality, self.H[0], total_dH)
             for i in range(len(self.H)):
                 self.H[i] = self.H[i]-total_dH
@@ -350,6 +324,7 @@ class SingleBranch(Manifold):
                 conv_repeat+=1
             else:
                 conv_repeat = 0
+                
         return self.getStartEnthalpy(), self.T[0]
     def getDP(self):
         return self.P[-1]-self.P[0]
@@ -370,8 +345,8 @@ class SingleBranch(Manifold):
     
     def plot(self):
         print("Plotting SB")
-        #pl.style.use('output/atlas.mplstyle')
-        
+        print(self.T[self.initialVaporQualityFineSector])
+        print(self.HTC[self.initialVaporQualityFineSector])
         self.satTemperature = np.zeros_like(self.fineLength)
         self.satPressure = np.zeros_like(self.fineLength)
         for i in range(len(self.fineLength)):
@@ -385,8 +360,8 @@ class SingleBranch(Manifold):
         fig1, ax1 = pl.subplots(1)
         yax1 = ax1.twinx()
         ax1.plot(self.fineLength[1:], self.T[1:], 'g-', label='Temperature (Fluid)')
-        ax1.plot(self.fineLength[1:], self.satTemperature[1:], 'c-', label='Temperature (Saturation)')
-        ax1.plot(self.fineLength[1:-1], self.wallTemperature[1:-1], 'b-', label='Temperature (Wall)')
+        #ax1.plot(self.fineLength[1:], self.satTemperature[1:], 'c-', label='Temperature (Saturation)')
+        #ax1.plot(self.fineLength[1:-1], self.wallTemperature[1:-1], 'b-', label='Temperature (Wall)')
         yax1.plot(self.fineLength[1:], self.P[1:], 'r-', label='Pressure (Fluid)')
         yax1.plot(self.fineLength[1:], self.satPressure[1:], 'm-', label='Pressure (Saturation)')
         ax1.legend(loc='upper right')
@@ -416,30 +391,19 @@ class SingleBranch(Manifold):
         ax3.set_ylabel('HTC (W/m^2K)', color='g')
         yax3.set_ylabel('Vapor Quality', color='r')
 
-        fig1.savefig('output/' + self.Name + '_PT.pdf')
-        fig2.savefig('output/' + self.Name + '_Flow.pdf')
-        fig3.savefig('output/' + self.Name + '_HTC.pdf')
+        fig1.savefig('output/' + runinfo.runname + '_' + self.Name + '_PT.pdf')
+        fig2.savefig('output/' + runinfo.runname + '_' + self.Name + '_Flow.pdf')
+        fig3.savefig('output/' + runinfo.runname + '_' + self.Name + '_HTC.pdf')
 
-        #pl.show(block=True)
 
-if __name__ == "__main__":
-    prefix = "../"
-    filename = "CobraV1a_coupledring.xml" if len(sys.argv) <= 1 else sys.argv[1]
-    path = prefix + filename
-    MF = None
-    x = SingleBranch('CO2', -40, 0.01, 0, MF, path)
-    if x.vary:
-        x.run()
-        x.main(prt=False)
-        cur = x.P[0]-x.P[-1]
-        print("\tDelta Pressure: {}".format(cur))
-        while cur > float(x.converge):
-            x = SingleBranch('CO2', -40, 0, 0, MF*1e-3, path, varyValue=x.varyValue, varyIndex=x.varyIndex, eps=x.eps, converge=x.converge, param=x.param, dir=x.dir)
-            x.run()
-            x.main(prt=False)
-            cur = x.P[0]-x.P[-1]
-            print("\tDelta Pressure: {}".format(cur))
-    else:
-        x.run()
-        x.main()
-    # x.plot()
+        print('SB writing data')
+        df_columns = ['Pressure', 'Temperature', 'Enthalpy', 'HTC', 'satPressure', 'satTemperature', 'wallTemperature', 'vaporQuality', 'heatFlux', 'Length', 'State']
+        thermalData = []
+        for i in range(len(self.P)-1):
+            thermalData.append([self.P[i], self.T[i], self.H[i], self.HTC[i], self.satTemperature[i], self.satPressure[i], self.wallTemperature[i], self.vaporQuality[i], self.fineHeatFlux[i], self.fineLength[i], self.State[i]])
+        thermal_df = pd.DataFrame(thermalData, columns=df_columns)
+        thermal_df.to_hdf('output/' + runinfo.runname + '_' + self.Name + '.h5', key='fluid', mode='w')
+        thermal_df.to_csv('output/' + runinfo.runname + '_' + self.Name + '.csv', mode='w')
+
+
+        

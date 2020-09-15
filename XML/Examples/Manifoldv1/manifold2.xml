@@ -1,0 +1,7 @@
+<data>
+  <components type="series">
+    <manifold type="branch" loc="branch1.xml"></manifold>
+    <manifold type="manifold" loc="manifold3.xml"></manifold>
+    <manifold type="branch" loc="branch5.xml"></manifold>
+  </components>
+</data>

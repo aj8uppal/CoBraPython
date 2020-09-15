@@ -1,8 +1,5 @@
-from Correlations import F_Void_8
-from DarcyWeisbach import *
-# import sys
-# sys.path.append('../../REFPROP')
-# from refprop import RefPropInterface
+from .Correlations import F_Void_8
+from .DarcyWeisbach import *
 
 def dPf_Ver(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, Angle, g, refpropm):
     # RPI = RefPropInterface()

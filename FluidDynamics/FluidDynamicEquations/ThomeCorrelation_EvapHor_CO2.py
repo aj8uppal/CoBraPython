@@ -1,8 +1,4 @@
-from Correlations import *
-# import sys
-# sys.path.append('../../REFPROP')
-# from refprop import RefPropInterface
-#import numpy as np
+from .Correlations import *
 
 def ThomeCorrelation_EvapHor_CO2(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     # function[dP,HTC,x,rm,flowpattern] = ThomeCorrelation_EvapHor_CO2(Fluid,P [bar],H [J/kg],MFLX [kg/m2s], HFLX [ W/m2K], Dh [m], CS-area [m2], periphery [m])
