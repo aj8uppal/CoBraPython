@@ -1,7 +1,4 @@
-from Correlations import *
-# import sys
-# sys.path.append('../../REFPROP')
-# from refprop import RefPropInterface
+from .Correlations import *
 
 def ThomeCorrelation_EvapHor(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     # Wojtan-Ursenbacher-Thome model_updated based on model of

@@ -1,7 +1,5 @@
-from Correlations import F_Void_8
+from .Correlations import F_Void_8
 import sys
-# sys.path.append('../../REFPROP')
-# from refprop import RefPropInterface
 
 #VERIFIED
 

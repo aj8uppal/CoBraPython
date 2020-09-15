@@ -1,0 +1,56 @@
+<data>
+  <parameter name="section">
+      <value>1</value>
+  </parameter>
+  <parameter name="hydraulic diameter" unit="mm">
+      <value>6</value>
+  </parameter>
+  <parameter name="tube section length" unit="m">
+<value>1.70</value>
+  </parameter>
+  <parameter name="tube orientation angle" unit="deg">
+<value>0</value>
+  </parameter>
+  <parameter name="tube roughness" unit="µm">
+<value>0</value>
+  </parameter>
+  <parameter name="HX with Node #" unit="dimensionless">
+    <value>0</value>
+  </parameter>
+  <parameter name="HX Flow direction (co-current=1, counter-current=-1" unit="dimensionless">
+    <value>0</value>
+  </parameter>
+  <parameter name="HX conductance" unit="W/mK">
+      <value>0</value>
+  </parameter>
+  <parameter name="HX thickness" unit="mm">
+      <value>0</value>
+  </parameter>
+  <parameter name="Insulation conductance" unit="W/mK">
+      <value>0</value>
+  </parameter>
+  <parameter name="Environmental temperature" unit="C">
+      <value>-10</value>
+  </parameter>
+  <parameter name="Tube wall thickness" unit="mm">
+<value>0.15</value>
+  </parameter>
+  <parameter name="Insulation thickness" unit="mm">
+<value>10</value>
+  </parameter>
+  <parameter name="Tube thermal conductance" unit="W/mK">
+<value>16.4</value>
+  </parameter>
+  <parameter name="HTC air" unit="w/m^2K">
+<value>0</value>
+  </parameter>
+  <parameter name="Heat Flow" unit="W">
+    <value>0</value>
+  </parameter>
+  <parameter name="dL" unit="m">
+      <value>1e-2</value>
+  </parameter>
+    <parameter name="corrModel" unit="index">
+      <value>0</value>
+  </parameter>
+</data>

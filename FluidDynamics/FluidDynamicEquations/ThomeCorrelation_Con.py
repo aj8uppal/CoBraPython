@@ -1,8 +1,5 @@
-from Correlations import *
+from .Correlations import *
 from numpy import isnan
-# import sys
-# sys.path.append('../../REFPROP')
-# from refprop import RefPropInterface
 
 def ThomeCorrelation_Con(Fluid, P, H, MFLX, HFLX, Dh, A, Ph, refpropm):
     # RPI = RefPropInterface()

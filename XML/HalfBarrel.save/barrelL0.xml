@@ -1,0 +1,6 @@
+<data>
+  <components type="parallel">
+    <manifold type="branch" loc="staveL0_A.xml" vq0="0.01" vq0_point="2"></manifold>
+    <manifold type="branch" loc="staveL0_B.xml" vq0="0.01" vq0_point="2"></manifold>
+ </components>
+</data>
