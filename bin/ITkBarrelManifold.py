@@ -18,7 +18,7 @@ if __name__ == '__main__':
     path = "../XML/HalfBarrel/"
     rootXML = "barrel.xml"
     
-    m = Manifold(path, rootXML, 2.*2.304e-3+2.*7.68e-3, 0.0, -1, -40.)
+    m = Manifold(path, rootXML, 6.*0.975e-3+10.*1.95e-3, 0.0, -1, -40.)
 #    m = Manifold(path, rootXML, 2.*2.304e-3, 0.0, -1, -40.)
     m.run()
     m.plot()
