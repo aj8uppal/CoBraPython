@@ -1,0 +1,11 @@
+import pandas as pd
+import sys, os, re
+
+for file in os.listdir('./output/'):
+
+    match = re.search('l0ed_(\w+)_l1ed_{}_fld_{}_highpower
+    if
+
+
+df = pd.read_csv(sys.argv[1])
+print(df.iloc[df['heatFlux'].gt(10000).idxmax()]['Temperature'])

@@ -35,17 +35,26 @@ class Manifold():
         self.SingleBranch = SingleBranch
         
         self.Name = base_path+root
-        self.Fluid = "CO2" # this has to be determined by the XML... update later.
-        self.setPointTemp = setPointTemp
-        self.initialVaporQuality = initialVaporQuality #put 1% just to be safe
-        self.initialVaporQualitySector = initialVaporQualitySector
-        self.initialMassFlow = initialMassFlow
         self.branches = [] #array of manifolds (branches)
         self.xmls = []
         self.base_path = base_path
         self.root = root
         self.parent = parent
         self.series = None
+
+        # these are the properties that a single branch has
+        # so a manifold has to have as well
+        
+        self.Fluid = "CO2" # this has to be determined by the XML... update later.
+        self.setPointTemp = setPointTemp
+        self.initialVaporQuality = initialVaporQuality #put 1% just to be safe
+        self.initialVaporQualitySector = initialVaporQualitySector
+        self.massFlow = initialMassFlow
+
+        self.finalVaporQualityGuess = 0.5
+        self.finalPressureGuess = 0
+        self.finalUsePressureGuess = False
+
         self.initialize()
 
     def initialize(self):
@@ -62,8 +71,8 @@ class Manifold():
             if branch[0] == 'manifold':
                 self.branches[b] = Manifold(self.base_path, 
                                             branch[1], 
-                                            self.initialMassFlow if self.series else self.initialMassFlow/len(self.branches), 
-                                            0.0, # Manifold never have initial vapor quality, this is defined at the singlebranch level
+                                            self.massFlow if self.series else self.massFlow/len(self.branches), 
+                                            branch[2],
                                             None,
                                             setPointTemp=self.setPointTemp, 
                                             parent=self)
@@ -72,17 +81,9 @@ class Manifold():
                                                      Tsp=self.setPointTemp, 
                                                      vq0 = branch[2],
                                                      vq0_point = branch[3] if branch[3]>=0 else None,                                                     
-                                                     MF = self.initialMassFlow if self.series else self.initialMassFlow/len(self.branches), 
+                                                     MF = self.massFlow if self.series else self.massFlow/len(self.branches), 
                                                      xml = self.base_path+branch[1], 
                                                      parent=self)
-
-    def updateMassFlow(self, newMF):
-        self.initialMassFlow = newMF
-        for branch in self.branches:
-            if not self.series:
-                branch.updateMassFlow(self.initialMassFlow/len(self.branches))
-            else:
-                branch.updateMassFlow(self.initialMassFlow)
 
     def worker(self, branch):
         branch.run(run=True)
@@ -90,11 +91,11 @@ class Manifold():
     
     def minimize(self):
         N = len(self.branches)
-        weights = np.full(N, self.initialMassFlow/N)
+        weights = np.full(N, self.massFlow/N)
         for i in range(N):
-            weights[i]=self.initialMassFlow*self.branches[i].getTotalAppliedHeat()/self.getTotalAppliedHeat()
+            weights[i]=self.massFlow*self.branches[i].getTotalAppliedHeat()/self.getTotalAppliedHeat()
             
-        print("Total mass flow for {}: {} kg/s".format(" ".join(map(str, self.branches)), self.initialMassFlow))
+        print("Total mass flow for {}: {} kg/s".format(" ".join(map(str, self.branches)), self.massFlow))
         dPs = np.zeros_like(weights)
         epsilon = 0.1
         gamma = 0.0001
@@ -104,7 +105,7 @@ class Manifold():
             
             for b in range(len(self.branches)):
                 branch = self.branches[b]
-                branch.updateMassFlow(weights[b])
+                branch.massFlow = weights[b]
                 # branch.run(run=True)
 
             p = MyPool(len(self.branches))
@@ -145,17 +146,6 @@ class Manifold():
     def concat(self):
 
         print('Solving concatenation')
-
-        # logic:
-        #   solve each part of the series
-        #   from nBranch-1
-        #      if it is evaporating
-        #            set setPointTemp to initial temp of the next one
-        #            set the final guess to the initial vapor quality of the
-        #      if not evaporating
-        #            set setPointTemp to same temperature as the final branch
-        #            set final guess to 0.
-        
         
         for ibranch, branch in enumerate(self.branches):
             if branch.initialVaporQuality > 0:
@@ -164,7 +154,7 @@ class Manifold():
                 break
         nEvapBranches = len(self.branches) - firstEvapBranch;
         
-        vaporQualities = np.linspace(self.initialVaporQuality, 0.5, nEvapBranches+1)
+        vaporQualities = np.linspace(firstVaporQuality, 0.5, nEvapBranches+1)
         for i in range(firstEvapBranch+1,len(self.branches)):
             vaporQualities[i-firstEvapBranch]=vaporQualities[i-1-firstEvapBranch]+(0.5-self.branches[firstEvapBranch].initialVaporQuality)*self.branches[i-1].getTotalAppliedHeat()/self.getTotalAppliedHeat()
         vaporQualities = np.concatenate(([0]*firstEvapBranch,vaporQualities))
@@ -239,7 +229,7 @@ class Manifold():
   
     def prettyprint(self, i=0, var=None):
         print(i*"\t|"+self.Name, end="    ")
-        print(self.initialMassFlow if var == "IMF" else "")
+        print(self.massFlow if var == "IMF" else "")
         for b in self.branches:
             if b.__class__ == Manifold:
                 b.prettyprint(i=i+1, var=var)
@@ -252,10 +242,53 @@ class Manifold():
         for b in self.branches:
             b.plot()
             
-    def run(self, ST=None, run=None):
- 
-        ST = ST or self.setPointTemp
+    def run(self, run=None):
+
+        if self.series == False:
+            N = len(self.branches)
+            weights = np.full(N, self.massFlow/N)
+            for i in range(N):
+                weights[i]=self.massFlow*self.branches[i].getTotalAppliedHeat()/self.getTotalAppliedHeat()
+            for ibranch,branch in enumerate(self.branches):
+                branch.setPointTemp = self.setPointTemp
+                branch.massFlow = weights[ibranch]
+                branch.finalVaporQualityGuess = self.finalVaporQualityGuess
+                branch.finalPressureGuess = self.finalPressureGuess
+                branch.finalUsePressureGuess = self.finalPressureGuess
+                if branch.initialVaporQualitySector is None:
+                        branch.initialVaporQuality = self.initialVaporQuality
+        else:
+            self.branches[-1].setPointTemp = self.setPointTemp
+
+            for ibranch, branch in enumerate(self.branches):
+                if branch.initialVaporQuality > 0:
+                    firstEvapBranch = ibranch
+                    firstVaporQuality = branch.initialVaporQuality
+                    break
+            nEvapBranches = len(self.branches) - firstEvapBranch;
         
+            vaporQualities = np.linspace(firstVaporQuality, 0.5, nEvapBranches+1)
+            for i in range(firstEvapBranch+1,len(self.branches)):
+                vaporQualities[i-firstEvapBranch]=vaporQualities[i-1-firstEvapBranch]+(0.5-self.branches[firstEvapBranch].initialVaporQuality)*self.branches[i-1].getTotalAppliedHeat()/self.getTotalAppliedHeat()
+            vaporQualities = np.concatenate(([0]*firstEvapBranch,vaporQualities))
+            temperatures = np.ones_like(vaporQualities)
+            pressures = np.ones_like(vaporQualities)
+            for i in range(len(self.branches)):
+                temperatures[i+1] = self.branches[i].setPointTemp
+            temperatures[0] = self.branches[0].setPointTemp #getInitialTemp() 
+            for i in range(len(self.branches)+1):
+                pressures[i] = self.refpropm('P','T',temperatures[i]+273.15,'Q',vaporQualities[i],self.Fluid)*1e-2;
+
+            for ibranch in range(len(self.branches)-1, -1, -1):
+                self.branches[ibranch].setPointTemp = temperatures[ibranch+1]
+                if ibranch >= firstEvapBranch:
+                    self.branches[ibranch].finalVaporQualityGuess = vaporQualities[ibranch+1]
+                    if self.branches[ibranch].initialVaporQualitySector is None:
+                        self.branches[ibranch].initialVaporQuality = vaporQualities[ibranch]
+                else:
+                    self.branches[ibranch].finalUsePressureGuess = True
+                    self.branches[ibranch].finalPressureGuess = pressures[ibranch+1]
+                        
         if len(self.branches)==1:
             self.branches[0].run(run=True)
             print(self.getDP())

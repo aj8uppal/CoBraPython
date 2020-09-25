@@ -100,9 +100,9 @@ class SingleBranch(Manifold):
         return "<Single Branch {}>".format(self.xml)
     def __str__(self):
         return self.xml
-    def run(self, ST=None, ivq=None, run=False):
-        self.setPointTemp = ST if ST else self.setPointTemp
-        self.initialVaporQuality = ivq if ivq else self.initialVaporQuality
+    def run(self, run=False):
+        #        self.setPointTemp = ST if ST else self.setPointTemp
+        #        self.initialVaporQuality = ivq if ivq else self.initialVaporQuality
         self.initialize_arrays()
         self.fine_config()
         self.redefine()
@@ -397,10 +397,12 @@ class SingleBranch(Manifold):
 
 
         print('SB writing data')
-        df_columns = ['Pressure', 'Temperature', 'Enthalpy', 'HTC', 'satPressure', 'satTemperature', 'wallTemperature', 'vaporQuality', 'heatFlux', 'Length', 'State']
+        df_columns = ['Pressure', 'Temperature', 'Enthalpy', 'HTC', 'satPressure', 'satTemperature', 'wallTemperature', 'vaporQuality', 'heatFlux', 'Length', 'State', 'MassFlow', 'MFperPower']
         thermalData = []
+        deltaInvEnthalpy = self.massFlow/np.sum(self.fineAppliedHeatFlux*np.pi*self.fineDiameter)
+
         for i in range(len(self.P)-1):
-            thermalData.append([self.P[i], self.T[i], self.H[i], self.HTC[i], self.satTemperature[i], self.satPressure[i], self.wallTemperature[i], self.vaporQuality[i], self.fineHeatFlux[i], self.fineLength[i], self.State[i]])
+            thermalData.append([self.P[i], self.T[i], self.H[i], self.HTC[i], self.satTemperature[i], self.satPressure[i], self.wallTemperature[i], self.vaporQuality[i], self.fineHeatFlux[i], self.fineLength[i], self.State[i], self.massFlow, deltaInvEnthalpy])
         thermal_df = pd.DataFrame(thermalData, columns=df_columns)
         thermal_df.to_hdf('output/' + runinfo.runname + '_' + self.Name + '.h5', key='fluid', mode='w')
         thermal_df.to_csv('output/' + runinfo.runname + '_' + self.Name + '.csv', mode='w')
