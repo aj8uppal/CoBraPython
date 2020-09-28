@@ -1,0 +1,6 @@
+<data>
+  <components type="parallel">
+    <manifold type="manifold" loc="endcap4CR2LR2IR_A.xml"  vq0="0.01" vq0_point="-1"></manifold>
+    <manifold type="manifold" loc="endcap4CR2LR2IR_B.xml"  vq0="0.01" vq0_point="-1"></manifold>
+  </components>
+</data>

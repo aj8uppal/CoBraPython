@@ -204,13 +204,14 @@ class Manifold():
             print("Running Children")
             p = MyPool(len(self.branches))
             self.branches = p.map(self.worker, self.branches)
-            
+
+            print("Updating")
             # update things that actually change
             for ibranch in range(len(self.branches)-1, -1, -1):
                 vaporQualities[ibranch+1] = self.branches[ibranch].getFinalVaporQuality()            
                 temperatures[ibranch] = self.branches[ibranch].getInitialTemp()
                 pressures[ibranch] = self.branches[ibranch].getStartPressure()
-
+            print(vaporQualities,temperatures,pressures)
             prev_enthalpies = np.copy(enthalpies)
             for i in range(len(enthalpies)):
                 enthalpies[i] = self.branches[i].getStartEnthalpy()

@@ -1,0 +1,7 @@
+<data>
+  <components type="series">
+    <manifold type="branch" loc="exhaustA_B.xml" vq0="0.0" vq0_point="-1"></manifold>
+    <manifold type="manifold" loc="quartershell_B.xml"  vq0="0.01" vq0_point="-1"></manifold>
+    <manifold type="branch" loc="exhaustB_B.xml" vq0="0.30" vq0_point="-1"></manifold>
+  </components>
+</data>

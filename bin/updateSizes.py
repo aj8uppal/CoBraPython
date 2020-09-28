@@ -29,15 +29,15 @@ if __name__ == '__main__':
     lines['l0caplength'] = [20]
     lines['l0capdiam'] = [11]
     lines['l0exhdiam'] = [17]
-    lines['l0evpcorr'] = [156,158,160]
     lines['l0evppower'] = [138,140,142]
+    lines['l0evpcorr'] = [156,158,160]
     lines['l0evpdiam'] = [12,13,14,15,16]
     
     lines['l1caplength'] = [28]
     lines['l1capdiam'] = [15]
     lines['l1exhdiam'] = [25]
-    lines['l1evpcorr'] = [198,200,202,204,206]
-    lines['l1evppower'] = [224,226,228,230,232]
+    lines['l1evppower'] = [198,200,202,204,206]
+    lines['l1evpcorr'] = [224,226,228,230,232]
     lines['l1evpdiam'] = [16,17,18,19,20,21,22,23,24]
 
     lines['flexdiam'] = [5]

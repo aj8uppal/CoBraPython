@@ -10,12 +10,12 @@
   </parameter>
   <parameter name="hydraulic diameter" unit="mm">
 <value>0.7</value>
-      <value>2.3</value>
-      <value>2.3</value>
-      <value>2.3</value>
-      <value>2.3</value>
-      <value>2.3</value>
-<value>6.0</value>
+      <value>2.15</value>
+      <value>2.15</value>
+      <value>2.15</value>
+      <value>2.15</value>
+      <value>2.15</value>
+<value>3.25</value>
   </parameter>
   <parameter name="tube section length" unit="m">
 <value>1.7</value>
@@ -150,15 +150,15 @@
       <value>1e-3</value>
       <value>1e-3</value>
       <value>1e-3</value>
-      <value>1e-1</value>
+      <value>1e-2</value>
   </parameter>
     <parameter name="corrModel" unit="index">
       <value>0</value>
+<value>0</value>
       <value>0</value>
+<value>0</value>
       <value>0</value>
-      <value>0</value>
-      <value>0</value>
-      <value>0</value>
+<value>0</value>
       <value>0</value>
   </parameter>
 </data>

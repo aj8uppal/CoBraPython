@@ -23,7 +23,7 @@
       <value>3.0</value>
       <value>3.0</value>
       <value>3.0</value>
-<value>6.0</value>
+<value>3.25</value>
   </parameter>
   <parameter name="tube section length" unit="m">
 <value>1.7</value>
@@ -196,19 +196,19 @@
   </parameter>
   <parameter name="Heat Flow" unit="W">
     <value>0</value>
-    <value>153.6</value>
+<value>195.0</value>
     <value>0</value>
-    <value>153.6</value>
+<value>195.0</value>
     <value>0</value>
-    <value>153.6</value>
+<value>195.0</value>
     <value>0</value>
-    <value>153.6</value>
+<value>195.0</value>
     <value>0</value>
-    <value>153.6</value>
+<value>195.0</value>
     <value>0</value>
   </parameter>
   <parameter name="dL" unit="m">
-      <value>1e-2</value>
+      <value>5e-2</value>
       <value>1e-3</value>
       <value>1e-3</value>
       <value>1e-3</value>
@@ -222,15 +222,15 @@
   </parameter>
       <parameter name="corrModel" unit="index">
       <value>0</value>
-<value>195.0</value>
+<value>0</value>
       <value>0</value>
-<value>195.0</value>
+<value>0</value>
       <value>0</value>
-<value>195.0</value>
+<value>0</value>
       <value>0</value>
-<value>195.0</value>
+<value>0</value>
       <value>0</value>
-<value>195.0</value>
+<value>0</value>
       <value>0</value>
    </parameter>
 </data>

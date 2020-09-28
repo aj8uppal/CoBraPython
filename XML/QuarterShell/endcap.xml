@@ -1,8 +1,7 @@
 <data>
-  <components type="parallel">
-    <manifold type="branch" loc="coupledRingB.xml"></manifold>
-    <manifold type="branch" loc="coupledRingC.xml"></manifold>
-    <manifold type="branch" loc="l1RingA.xml"></manifold>
-    <manifold type="branch" loc="shortyRingA.xml"></manifold>
+  <components type="series">
+    <manifold type="branch" loc="flexlineA.xml" vq0="0.0" vq0_point="-1"></manifold>
+    <manifold type="manifold" loc="endcap4CR2LR2IR.xml"  vq0="0.01" vq0_point="-1"></manifold>
+    <manifold type="branch" loc="flexlineB.xml" vq0="0.30" vq0_point="-1"></manifold>
   </components>
 </data>

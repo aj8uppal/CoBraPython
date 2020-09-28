@@ -1,0 +1,12 @@
+<data>
+  <components type="parallel">
+    <manifold type="branch" loc="coupledRing_A_A.xml" vq0="0.01" vq0_point="2"></manifold>
+    <manifold type="branch" loc="coupledRing_A_B.xml" vq0="0.01" vq0_point="2"></manifold>
+    <manifold type="branch" loc="coupledRing_A_C.xml" vq0="0.01" vq0_point="2"></manifold>
+    <manifold type="branch" loc="coupledRing_A_D.xml" vq0="0.01" vq0_point="2"></manifold>
+    <manifold type="branch" loc="l1Ring_A_A.xml" vq0="0.01" vq0_point="2"></manifold>
+    <manifold type="branch" loc="l1Ring_A_B.xml" vq0="0.01" vq0_point="2"></manifold>
+    <manifold type="branch" loc="shortyRing_A_A.xml" vq0="0.01" vq0_point="2"></manifold>
+    <manifold type="branch" loc="shortyRing_A_B.xml" vq0="0.01" vq0_point="2"></manifold>
+ </components>
+</data>
