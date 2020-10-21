@@ -1,0 +1,46 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+X:/CoBraPython/REFPROP-cpp/REFPROP_lib.h
+string
+-
+cstring
+-
+cstring
+-
+dlfcn.h
+-
+windows.h
+-
+windows.h
+-
+sstream
+-
+string
+-
+algorithm
+-
+cstdio
+-
+
+X:/CoBraPython/REFPROP-cpp/main.cpp
+REFPROP_lib.h
+X:/CoBraPython/REFPROP-cpp/REFPROP_lib.h
+stdlib.h
+-
+stdio.h
+-
+
+X:/CoBraPython/REFPROP-cpp/other.cpp
+REFPROP_lib.h
+X:/CoBraPython/REFPROP-cpp/REFPROP_lib.h
+stdlib.h
+-
+stdio.h
+-
+
